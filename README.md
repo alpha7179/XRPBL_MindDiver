@@ -4,7 +4,6 @@
 
 
 
-\<br\>
 
 ## **2. 팀원 (Team Members)**
 
@@ -16,16 +15,14 @@
 |[배민우]| [2025005103] |[개발]|[@githubID]|
 |[김동현]| [2020104926] |[개발]|[@githubID]|
 
-\<br\>
 
 ## **3. 기술 스택 (Tech Stack)**
 
-  * **Engine:** Unity 6 (Version: `202X.X.Xf1`)
+  * **Engine:** Unity 6 (Version: `6000.0.57f1`)
   * **Language:** C\#
   * **Platform:** Meta Quest 2, Meta Quest 3, etc.
   * **Version Control:** Git, GitHub
 
-\<br\>
 
 ## **4. 개발 규칙 (Development Convention)**
 
@@ -45,7 +42,7 @@
 
       * 다른 팀원의 확인이나 작업이 필요한 경우 작성합니다.
       * 제목에 `[요청 대상]`을 명시합니다. (예: `[NAME]`)
-      * **예시:** `[NAEM] 3D 모델링 위치 조정 요청`
+      * **예시:** `[NAME] 3D 모델링 위치 조정 요청`
 
 ### **4.2. Commit Message Convention**
 
