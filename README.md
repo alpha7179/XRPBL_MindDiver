@@ -63,16 +63,16 @@
 ### **4.3. Branching Convention (개발 단계별 브랜치)**
 개발 단계는 아래 4단계로 구분하며, 각 단계별 브랜치를 별도로 생성해야 합니다.
 
-  * MVP (Minimum Viable Product)
-  * Proto (초기 단계 핵심 기능 개발)
-  * Alpha (기본 기능 개발 완료, 테스트 진행 단계)
-  * Beta (기능 완성 및 디버깅, 최종 단계)
+   * MVP (Minimum Viable Product)
+   * Proto (초기 단계 핵심 기능 개발)
+   * Alpha (기본 기능 개발 완료, 테스트 진행 단계)
+   * Beta (기능 완성 및 디버깅, 최종 단계)
 
   * 브랜치명 예시:
-  * MVP/[이니셜]
-  * Proto/[이니셜]
-  * Alpha/[이니셜]
-  * Beta/[이니셜]
+   * MVP/[이니셜]
+   * Proto/[이니셜]
+   * Alpha/[이니셜]
+   * Beta/[이니셜]
 
 각 단계별 브랜치에서 작업 후 충분한 테스트 및 검증을 완료한 뒤, 단계별 병합(Merge)합니다.
 
