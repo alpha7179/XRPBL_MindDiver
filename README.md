@@ -12,7 +12,7 @@ https://www.figma.com/design/BLxf2tZxQ5weZFxbRaBeCL/XR%EA%B8%B0%EC%88%A0PBL-%EA%
 ## **2. 팀원 (Team Members)**
 
 |이름|학번|역할|Mobile|e-maail|GitHub|
-|---|---|---|---|
+|---|---|---|---|---|---|
 |김동건| [2025005106] |기획(팀장)|010-8334-5206|akfn8334@naver.com|@githubID|
 |박지현| [2025005107] |모델링|010-5212-0524|555jihun@gmail.com|@githubID|
 |정기주| [2025005108] |디자인|010-7732-8275|korag410@kawon.ac.kr|@githubID|
