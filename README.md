@@ -26,11 +26,11 @@
 
 |이름|학번|역할|Mobile|e-maail|GitHub|
 |---|---|---|---|---|---|
-|김동건| [2025005106] |기획(팀장)|010-8334-5206|akfn8334@naver.com|@githubID|
-|박지현| [2025005107] |모델링|010-5212-0524|555jihun@gmail.com|@githubID|
-|정기주| [2025005108] |디자인|010-7732-8275|korag410@kawon.ac.kr|@githubID|
-|배민우| [2025005103] |개발]|010-4180-7179|alpha7179@ajou.ac.kr|@githubID|
-|김동현| [2020104926] |개발|010-3624-9565|dongstar2000@khu.ac.kr|@githubID|
+|김동건| 2025005106 |기획(팀장)|010-8334-5206|akfn8334@naver.com|@githubID|
+|박지현| 2025005107 |모델링|010-5212-0524|555jihun@gmail.com|@githubID|
+|정기주| 2025005108 |디자인|010-7732-8275|korag410@kawon.ac.kr|@githubID|
+|배민우| 2025005103 |개발|010-4180-7179|alpha7179@ajou.ac.kr|@githubID|
+|김동현| 2020104926 |개발|010-3624-9565|dongstar2000@khu.ac.kr|@githubID|
 
 
 ## **3. 기술 스택 (Tech Stack)**
