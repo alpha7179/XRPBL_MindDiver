@@ -11,6 +11,9 @@
 
 
 ### 공유 문서
+ * **GitLab**
+    * https://wemeet.twentyoz.kr/2025-xr-pbl/mind-diver
+
  * **Notion**
     * https://www.notion.so/kaywonpacemaker/XR-PBL-270303ad519f8040893ee9ffc5f2bf74
 
