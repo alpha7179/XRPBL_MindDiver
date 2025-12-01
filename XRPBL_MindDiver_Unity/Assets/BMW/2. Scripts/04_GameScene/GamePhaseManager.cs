@@ -1,6 +1,7 @@
-using UnityEngine;
-using System.Collections;
 using System;
+using System.Collections;
+using UnityEngine;
+using static GamePhaseManager;
 
 /// <summary>
 /// 게임의 진행 단계(페이즈)와 각 단계별 목표 및 시간 제한을 관리하는 클래스
@@ -8,7 +9,7 @@ using System;
 public class GamePhaseManager : MonoBehaviour
 {
     #region Enums
-    public enum Phase { Phase1, Phase2, Phase3, Complete, Null }
+    public enum Phase { PrePhase,Phase1, Phase2, Phase3, Complete, Null }
     #endregion
 
     #region Inspector Fields
@@ -26,8 +27,12 @@ public class GamePhaseManager : MonoBehaviour
     public int phase2KillGoal = 20;
 
     [Header("Target Zone")]
-    [Tooltip("Phase 1에서 도달해야 할 목표 지점 오브젝트 (활성화/비활성화 제어용)")]
+    [Tooltip("Phase 1에서 도달해야 할 목표 지점 오브젝트")]
     [SerializeField] private GameObject phase1TargetZone;
+
+    [Header("References")]
+    [Tooltip("거리 계산을 위한 플레이어 트랜스폼 (필수 할당)")]
+    [SerializeField] private Transform playerTransform; // [추가] 플레이어 위치 참조
 
     [Header("Debug Settings")]
     // 디버그 로그 출력 여부
@@ -39,74 +44,75 @@ public class GamePhaseManager : MonoBehaviour
     private int _phaseKillCount;
     // 목표 지점 도달 여부 확인
     private bool isZoneReached = false;
+
+    // [추가] 거리 계산용 변수
+    private Vector3 _startPosition; // 페이즈 1 시작 위치
+    private float _totalDistance;   // 시작점 ~ 목표점 총 거리
     #endregion
 
     #region Unity Lifecycle
-    /*
-     * 게임 데이터 초기화 및 페이즈 시나리오 코루틴 시작
-     */
     private void Start()
     {
-        // 게임 데이터 초기화 수행
         if (DataManager.Instance != null)
             DataManager.Instance.InitializeGameData();
 
-        // 메인 게임 흐름 코루틴 실행
         StartCoroutine(GameFlowRoutine());
     }
+
+    // [추가] 매 프레임 진행도 업데이트
+    private void Update()
+    {
+        // 1페이즈 진행 중일 때만 거리 계산 수행
+        if (currentPhase == Phase.Phase1)
+        {
+            UpdatePhase1Progress();
+        }
+    }
+
     #endregion
 
     #region Coroutines
-    /*
-     * 전체 게임 페이즈의 순차적 흐름을 제어하는 메인 코루틴
-     */
     private IEnumerator GameFlowRoutine()
     {
-        // -------------------------------------------------------------------------
-        // Phase 1: 존 도달 미션
-        // -------------------------------------------------------------------------
+        // PrePhase 시작
+        StartPhase(Phase.PrePhase);
+
+        if (PlayerShipController.Instance != null) PlayerShipController.Instance.SetMoveAction(false);
+
+        IngameUIManager.Instance.OpenMainPanel();
+        IngameUIManager.Instance.OpenInfoPanel();
+
+        // Phase 1 시작
         StartPhase(Phase.Phase1);
 
-        // 목표 존 오브젝트 활성화
+        if (PlayerShipController.Instance != null) PlayerShipController.Instance.SetMoveAction(true);
+
         if (phase1TargetZone != null) phase1TargetZone.SetActive(true);
         isZoneReached = false;
 
-        // 존 도달 성공 또는 제한 시간 종료 대기
         yield return StartCoroutine(WaitForConditionOrTime(() => isZoneReached, phase1Duration));
 
-        // 목표 존 오브젝트 비활성화
         if (phase1TargetZone != null) phase1TargetZone.SetActive(false);
 
-        // -------------------------------------------------------------------------
-        // Phase 2: 적 처치 또는 버티기 미션
-        // -------------------------------------------------------------------------
+        // Phase 2 시작
         StartPhase(Phase.Phase2);
 
-        // 목표 킬 달성 또는 제한 시간 종료 대기
         yield return StartCoroutine(WaitForConditionOrTime(() => _phaseKillCount >= phase2KillGoal, phase2Duration));
 
-        // -------------------------------------------------------------------------
-        // Phase 3: 보스전
-        // -------------------------------------------------------------------------
+        // Phase 3 시작
         StartPhase(Phase.Phase3);
-
-        // 보스 처치 대기 (OnBossDefeated 이벤트에 의해 페이즈 전환)
     }
 
-    /*
-     * 특정 조건 만족 또는 제한 시간 경과를 기다리는 유틸리티 코루틴
-     */
     private IEnumerator WaitForConditionOrTime(Func<bool> condition, float duration)
     {
         float timer = 0f;
 
         while (timer < duration)
         {
-            // 성공 조건 달성 확인
             if (condition != null && condition.Invoke())
             {
-                Log("[GamePhaseManager] Condition Met! Proceeding to next phase.");
-                yield break; // 조건 만족 시 즉시 종료 및 다음 단계 진행
+                Log($"[GamePhaseManager] End Phase: {currentPhase}. Proceeding to next phase.");
+                yield break;
             }
 
             timer += Time.deltaTime;
@@ -118,76 +124,95 @@ public class GamePhaseManager : MonoBehaviour
     #endregion
 
     #region Public Methods
-    /*
-     * 외부 트리거에 의한 목표 지점 도달 상태 설정
-     */
     public void SetZoneReached(bool reached)
     {
         isZoneReached = reached;
         Log($"[GamePhaseManager] Zone Reached: {reached}");
     }
 
-    /*
-     * 특정 페이즈를 시작하고 관련 설정(BGM, 카운트 초기화 등)을 적용하는 함수
-     */
     public void StartPhase(Phase phase)
     {
         currentPhase = phase;
         _phaseKillCount = 0;
 
         Log($"[GamePhaseManager] Start Phase: {phase}");
+        if (AudioManager.Instance != null) AudioManager.Instance.StopBGM();
+        if (AudioManager.Instance != null && GameManager.Instance != null) AudioManager.Instance.PlayBGM(GameManager.Instance.currentState, currentPhase);
 
         switch (phase)
         {
+            case Phase.PrePhase:
+                break;
+
             case Phase.Phase1:
-                // 페이즈 1 BGM 재생 및 설정
-                if (AudioManager.Instance) AudioManager.Instance.PlayBGM(GameManager.Instance.currentState, Phase.Phase1);
+                InitializePhase1Distance();
                 break;
 
             case Phase.Phase2:
-                // 페이즈 2 BGM 재생 및 설정
-                if (AudioManager.Instance) AudioManager.Instance.PlayBGM(GameManager.Instance.currentState, Phase.Phase2);
                 break;
 
             case Phase.Phase3:
-                // 페이즈 3 BGM 재생 및 설정
-                if (AudioManager.Instance) AudioManager.Instance.PlayBGM(GameManager.Instance.currentState, Phase.Phase3);
                 break;
 
             case Phase.Complete:
-                // 게임 클리어 처리 및 아웃트로 영상 전환
-                if (GameManager.Instance) GameManager.Instance.ChangeState(GameManager.GameState.OutroVideo);
                 break;
         }
     }
 
-    /*
-     * 적 처치 시 호출되어 페이즈 킬 카운트 및 전체 통계 갱신
-     */
     public void OnEnemyKilled()
     {
         _phaseKillCount++;
         if (DataManager.Instance) DataManager.Instance.IncrementKillCount();
     }
 
-    /*
-     * 보스 처치 시 호출되어 게임 완료 상태로 강제 전환
-     */
     public void OnBossDefeated()
     {
         if (DataManager.Instance) DataManager.Instance.StopTimer();
-
-        // 진행 중인 대기 코루틴 중단 및 완료 페이즈 즉시 시작
         StopAllCoroutines();
         StartPhase(Phase.Complete);
     }
 
-    /*
-     * 디버그 모드 시 로그 출력 수행
-     */
     public void Log(string message)
     {
         if (isDebugMode) Debug.Log(message);
     }
+    #endregion
+
+    #region Private Helper Methods (New)
+
+    // [추가] 페이즈 1 거리 데이터 초기화
+    private void InitializePhase1Distance()
+    {
+        if (playerTransform != null && phase1TargetZone != null)
+        {
+            _startPosition = playerTransform.position;
+            _totalDistance = Vector3.Distance(_startPosition, phase1TargetZone.transform.position) - playerTransform.localScale.z/2;
+
+            Log($"[Distance Init] Start: {_startPosition}, Target Dist: {_totalDistance}");
+        }
+        else
+        {
+            Debug.LogWarning("[GamePhaseManager] PlayerTransform or TargetZone is missing!");
+        }
+    }
+
+    private void UpdatePhase1Progress()
+    {
+        if (playerTransform == null || _totalDistance <= 0.001f) return;
+
+        // 시작점에서 현재 플레이어 위치까지 이동한 거리 계산
+        float distanceCovered = Vector3.Distance(_startPosition, playerTransform.position);
+
+        // 진행률 계산 (이동 거리 / 총 거리) * 100
+        float progressPercentage = (distanceCovered / _totalDistance) * 100f;
+
+        // 0 ~ 100 사이로 값 제한 (목표 지점을 지나쳐도 100을 넘지 않도록)
+        int progressInt = Mathf.RoundToInt(Mathf.Clamp(progressPercentage, 0f, 100f));
+
+        // DataManager에 값 반영 (SetProgress 사용)
+        // AddProgress는 '증감'이므로 현재 절대값을 넣기 위해 SetProgress를 사용합니다.
+        if (DataManager.Instance != null) DataManager.Instance.SetProgress(progressInt);
+    }
+
     #endregion
 }

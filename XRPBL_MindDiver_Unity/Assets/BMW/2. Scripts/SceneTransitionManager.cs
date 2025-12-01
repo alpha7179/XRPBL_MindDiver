@@ -39,7 +39,7 @@ public class SceneTransitionManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            transform.parent = null;
+            transform.SetParent(null, false);
             DontDestroyOnLoad(gameObject);
 
             // 카메라 설정과 무관하게 전체 화면을 덮도록 강제 설정

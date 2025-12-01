@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Video;
+using static UnityEngine.Rendering.DebugUI;
 
 /// <summary>
 /// 인트로 및 아웃트로 상황에 맞춰 3면 파노라마 비디오 재생을 관리하는 클래스
@@ -12,11 +14,17 @@ public class VideoManager : MonoBehaviour
     public VideoPlayer[] videoPlayers;
 
     [Header("Video Clips Settings (Order: 0=Front, 1=Left, 2=Right)")]
+    public List<GameObject> VideoPanels;
     // 인트로용 비디오 클립 배열
     public VideoClip[] introClips;
     // 아웃트로용 비디오 클립 배열
     public VideoClip[] outroClips;
+    public AudioSource[] videoAudioSource;
 
+    [Header("Audio Settings")]
+    [Range(0f, 1f)] public float masterVolume;
+    [SerializeField] private bool isSideDisplaySoundMute = true;
+    
     [Header("Debug Settings")]
     // 디버그 로그 출력 여부
     [SerializeField] private bool isDebugMode = true;
@@ -28,8 +36,14 @@ public class VideoManager : MonoBehaviour
      */
     private void Start()
     {
+
+        foreach (var video in VideoPanels) if (video) video.SetActive(false);
+        masterVolume = ((float)DataManager.Instance.GetVideoVolume()) / 100;
+
         // 플레이어 배열 유효성 검사
         if (!CheckArrayValid(videoPlayers, "Video Players")) return;
+
+        foreach (var video in VideoPanels) if (video) video.SetActive(true);
 
         // 1. DataManager에서 현재 재생할 비디오 타입 확인
         DataManager.VideoType type = DataManager.Instance.currentVideoType;
@@ -95,8 +109,7 @@ public class VideoManager : MonoBehaviour
             {
                 videoPlayers[i].clip = clips[i];
 
-                // 사이드 화면(1, 2) 오디오 음소거 옵션 (필요 시 주석 해제)
-                // if (i > 0) videoPlayers[i].SetDirectAudioMute(0, true);
+                ApplyVolume(videoPlayers[i], i);
 
                 videoPlayers[i].Play();
             }
@@ -106,6 +119,29 @@ public class VideoManager : MonoBehaviour
         if (videoPlayers[0] == null || clips[0] == null)
         {
             OnVideoFinished(null);
+        }
+    }
+
+    private void ApplyVolume(VideoPlayer vp, int screenIndex)
+    {
+        // 1. Audio Output Mode가 Direct(직접 출력)인지 확인
+        if (vp.audioOutputMode == VideoAudioOutputMode.Direct)
+        {
+            // 좌/우 화면(인덱스 1, 2)이고 음소거 옵션이 켜져있으면 0, 아니면 설정된 볼륨
+            float finalVolume = (isSideDisplaySoundMute && screenIndex > 0) ? 0f : masterVolume;
+
+            // 트랙 0번의 볼륨을 설정
+            vp.SetDirectAudioVolume(0, finalVolume);
+        }
+        // 2. Audio Output Mode가 AudioSource인 경우
+        else if (vp.audioOutputMode == VideoAudioOutputMode.AudioSource)
+        {
+            AudioSource source = vp.GetTargetAudioSource(0);
+            if (source != null)
+            {
+                float finalVolume = (isSideDisplaySoundMute && screenIndex > 0) ? 0f : masterVolume;
+                source.volume = finalVolume;
+            }
         }
     }
 

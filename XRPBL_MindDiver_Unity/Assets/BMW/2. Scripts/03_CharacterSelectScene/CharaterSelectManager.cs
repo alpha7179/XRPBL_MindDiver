@@ -15,6 +15,7 @@ public class CharaterSelectManager : MonoBehaviour
     public VideoPlayer[] videoPlayers;
 
     [Header("Video Clips Settings (Order: 0=Front, 1=Left, 2=Right)")]
+    public List<GameObject> VideoPanels;
     // 재생할 아웃트로 비디오 클립 배열
     public VideoClip[] outroClips;
 
@@ -34,6 +35,10 @@ public class CharaterSelectManager : MonoBehaviour
     [Header("UI Fade Settings")]
     // 패널 페이드 효과 지속 시간
     [SerializeField] private float panelFadeDuration = 0.2f;
+
+    [Header("Audio Settings")]
+    [Range(0f, 1f)] public float masterVolume;
+    [SerializeField] private bool isSideDisplaySoundMute = true;
 
     [Header("Debug Settings")]
     // 디버그 로그 출력 여부
@@ -63,6 +68,9 @@ public class CharaterSelectManager : MonoBehaviour
      */
     private void Start()
     {
+        foreach (var video in VideoPanels) if (video) video.SetActive(false);
+        masterVolume = ((float)DataManager.Instance.GetVideoVolume()) / 100;
+
         if (!CheckArrayValid(videoPlayers, "Video Players")) return;
 
         // 메인 비디오 플레이어에 종료 이벤트 연결
@@ -77,7 +85,6 @@ public class CharaterSelectManager : MonoBehaviour
             Debug.LogWarning("!!! [Test Mode] 정면 버튼만 눌러도 진행되는 모드가 켜져있습니다 !!!");
         }
 
-        AudioManager.Instance.PlayBGM(GameManager.Instance.currentState);
     }
 
     /*
@@ -106,6 +113,9 @@ public class CharaterSelectManager : MonoBehaviour
                 FadePanel(FrontButtonText, false);
                 FadePanel(RightButtonText, false);
                 FadePanel(LeftButtonText, false);
+                foreach (var video in VideoPanels) if (video) FadePanel(video,true);
+
+                AudioManager.Instance.StopBGM();
 
                 StartVideoSequence();
             }
@@ -161,6 +171,9 @@ public class CharaterSelectManager : MonoBehaviour
             if (videoPlayers[i] != null && clips[i] != null)
             {
                 videoPlayers[i].clip = clips[i];
+                
+                ApplyVolume(videoPlayers[i], i);
+
                 videoPlayers[i].Play();
             }
         }
@@ -169,6 +182,29 @@ public class CharaterSelectManager : MonoBehaviour
         if (videoPlayers[0] == null || clips[0] == null)
         {
             OnVideoFinished(null);
+        }
+    }
+
+    private void ApplyVolume(VideoPlayer vp, int screenIndex)
+    {
+        // 1. Audio Output Mode가 Direct(직접 출력)인지 확인
+        if (vp.audioOutputMode == VideoAudioOutputMode.Direct)
+        {
+            // 좌/우 화면(인덱스 1, 2)이고 음소거 옵션이 켜져있으면 0, 아니면 설정된 볼륨
+            float finalVolume = (isSideDisplaySoundMute && screenIndex > 0) ? 0f : masterVolume;
+
+            // 트랙 0번의 볼륨을 설정
+            vp.SetDirectAudioVolume(0, finalVolume);
+        }
+        // 2. Audio Output Mode가 AudioSource인 경우
+        else if (vp.audioOutputMode == VideoAudioOutputMode.AudioSource)
+        {
+            AudioSource source = vp.GetTargetAudioSource(0);
+            if (source != null)
+            {
+                float finalVolume = (isSideDisplaySoundMute && screenIndex > 0) ? 0f : masterVolume;
+                source.volume = finalVolume;
+            }
         }
     }
 

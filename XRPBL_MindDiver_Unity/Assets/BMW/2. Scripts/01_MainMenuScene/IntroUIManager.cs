@@ -11,6 +11,8 @@ using static GamePhaseManager;
 /// </summary>
 public class IntroUIManager : MonoBehaviour
 {
+    public static IntroUIManager Instance { get; private set; }
+
     #region Inspector Fields
     [Header("UI 패널 (Parents)")]
     // 인트로 패널 참조
@@ -37,6 +39,10 @@ public class IntroUIManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI SFXText;
     // SFX 볼륨 슬라이더
     [SerializeField] private Slider SFXSlider;
+    // Video 볼륨 텍스트
+    [SerializeField] private TextMeshProUGUI VideoText;
+    // Video 볼륨 슬라이더
+    [SerializeField] private Slider VideoSlider;
 
     [Header("Debug Settings")]
     // 디버그 로그 출력 여부
@@ -53,6 +59,8 @@ public class IntroUIManager : MonoBehaviour
     private int BGMValue;
     // 현재 SFX 볼륨 값
     private int SFXValue;
+    // 현재 Video 볼륨 값
+    private int videoValue;
     #endregion
 
     #region Unity Lifecycle
@@ -66,22 +74,21 @@ public class IntroUIManager : MonoBehaviour
         BGMSlider.maxValue = 100;
         BGMSlider.wholeNumbers = true;
 
-        BGMValue = 100;
-        BGMSlider.value = BGMValue;
-        BGMSlider.onValueChanged.AddListener(OnBGMSliderValueChanged);
-
-        OnBGMSliderValueChanged(BGMValue);
+        UpdateBGMVolume(DataManager.Instance.GetBGMVolume());
 
         // SFX 슬라이더 설정 및 이벤트 리스너 등록
         SFXSlider.minValue = 0;
         SFXSlider.maxValue = 100;
         SFXSlider.wholeNumbers = true;
 
-        SFXValue = 100;
-        SFXSlider.value = SFXValue;
-        SFXSlider.onValueChanged.AddListener(OnSFXSliderValueChanged);
+        UpdateSFXVolume(DataManager.Instance.GetSFXVolume());
 
-        OnSFXSliderValueChanged(SFXValue);
+        // Video 슬라이더 설정 및 이벤트 리스너 등록
+        VideoSlider.minValue = 0;
+        VideoSlider.maxValue = 100;
+        VideoSlider.wholeNumbers = true;
+
+        UpdateVideoVolume(DataManager.Instance.GetVideoVolume());
 
         // 하위 패널 비활성화 초기화
         if (placePanel) placePanel.SetActive(false);
@@ -95,9 +102,6 @@ public class IntroUIManager : MonoBehaviour
 
         currentTopPanel = introPanel;
         currentMainPanel = null;
-
-        // 게임 상태에 따른 BGM 재생
-        AudioManager.Instance.PlayBGM(GameManager.Instance.currentState);
     }
     #endregion
 
@@ -197,6 +201,33 @@ public class IntroUIManager : MonoBehaviour
         // GameManager를 통한 씬 상태 전환
         if (GameManager.Instance != null) GameManager.Instance.ChangeState(GameManager.GameState.IntroVideo);
     }
+
+    public void UpdateBGMVolume(int value)
+    {
+        BGMValue = value;
+        BGMSlider.value = BGMValue;
+        BGMSlider.onValueChanged.AddListener(OnBGMSliderValueChanged);
+
+        OnBGMSliderValueChanged(BGMValue);
+    }
+
+    public void UpdateSFXVolume(int value)
+    {
+        SFXValue = value;
+        SFXSlider.value = SFXValue;
+        SFXSlider.onValueChanged.AddListener(OnSFXSliderValueChanged);
+
+        OnSFXSliderValueChanged(SFXValue);
+    }
+
+    public void UpdateVideoVolume(int value)
+    {
+        videoValue = value;
+        VideoSlider.value = videoValue;
+        VideoSlider.onValueChanged.AddListener(OnVideoSliderValueChanged);
+
+        OnVideoSliderValueChanged(videoValue);
+    }
     #endregion
 
     #region Slider Event Handlers
@@ -206,8 +237,8 @@ public class IntroUIManager : MonoBehaviour
     private void OnBGMSliderValueChanged(float value)
     {
         BGMValue = Mathf.RoundToInt(value);
-        if (BGMText != null)
-            BGMText.text = BGMValue.ToString();
+        if (BGMText != null) BGMText.text = BGMValue.ToString();
+        if (DataManager.Instance != null) DataManager.Instance.SetBGMVolume(BGMValue);
     }
 
     /*
@@ -216,8 +247,18 @@ public class IntroUIManager : MonoBehaviour
     private void OnSFXSliderValueChanged(float value)
     {
         SFXValue = Mathf.RoundToInt(value);
-        if (SFXText != null)
-            SFXText.text = SFXValue.ToString();
+        if (SFXText != null) SFXText.text = SFXValue.ToString();
+        if (DataManager.Instance != null) DataManager.Instance.SetSFXVolume(SFXValue);
+    }
+
+    /*
+     * Video 슬라이더 값 변경 시 텍스트 갱신 및 내부 값 저장
+     */
+    private void OnVideoSliderValueChanged(float value)
+    {
+        videoValue = Mathf.RoundToInt(value);
+        if (VideoText != null) VideoText.text = videoValue.ToString();
+        if (DataManager.Instance != null) DataManager.Instance.SetVideoVolume(videoValue);
     }
     #endregion
 

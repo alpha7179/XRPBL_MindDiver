@@ -109,6 +109,7 @@ public class GameManager : MonoBehaviour
      */
     public void ChangeState(GameState newState)
     {
+        AudioManager.Instance.StopBGM();
         currentState = newState;
         Log($"[GameManager] State Changed to: {newState}");
 
@@ -116,6 +117,8 @@ public class GameManager : MonoBehaviour
         {
             case GameState.MainMenu:
                 LoadScene("01_MainMenuScene");
+                AudioManager.Instance.PlayBGM(currentState);
+
                 break;
 
             case GameState.IntroVideo:
@@ -125,6 +128,7 @@ public class GameManager : MonoBehaviour
 
             case GameState.CharacterSelect:
                 LoadScene("03_CharacterSelectScene");
+                AudioManager.Instance.PlayBGM(currentState);
                 break;
 
             case GameState.GameStage:
@@ -138,6 +142,7 @@ public class GameManager : MonoBehaviour
 
             case GameState.Result:
                 LoadScene("ResultScene");
+                AudioManager.Instance.PlayBGM(currentState);
                 break;
         }
 

@@ -1,110 +1,214 @@
 using UnityEngine;
+using static UnityEngine.Rendering.DebugUI;
 
 /// <summary>
-/// 플레이어 우주선의 물리 기반 이동, 연출 및 상호작용을 제어하는 클래스
+/// 플레이어 우주선의 평행 이동 및 속도 제어 클래스 (회전 없음)
 /// </summary>
 public class PlayerShipController : MonoBehaviour
 {
-    #region Inspector Fields
-    [Header("Movement Settings")]
-    // 전진 자동 이동 속도 설정
-    public float forwardSpeed = 20f;
-    // 좌우 및 상하 이동 속도 설정
-    public float strafeSpeed = 15f;
+    public static PlayerShipController Instance { get; private set; }
 
-    [Header("Visual Settings")]
-    // 이동 시 기체 기울임 연출 각도 설정 (0일 경우 기울임 없음)
-    public float leanAngle = 20f;
-    // 이동 가능 범위 제한 설정 (X: 좌우, Y: 상하)
-    public Vector2 moveLimits = new Vector2(10f, 5f);
+    #region Inspector Fields
+    [Header("Control Settings")]
+    [Tooltip("이 값이 True여야만 움직일 수 있습니다.")]
+    [SerializeField] private bool canMove;
+
+    [Header("Speed Settings")]
+    [Tooltip("기본 전진 속도")]
+    [SerializeField] private float defaultSpeed = 0f;
+    [Tooltip("W키 누를 시 최대 속도")]
+    [SerializeField] private float maxSpeed = 40f;
+    [Tooltip("S키 누를 시 최소 속도 (감속)")]
+    [SerializeField] private float minSpeed = 0.001f;
+    [Tooltip("속도 변경 반응 속도")]
+    [SerializeField] private float acceleration = 5f;
+
+    [Header("Movement Settings")]
+    [Tooltip("좌우(A/D) 이동 속도")]
+    [SerializeField] private float strafeSpeed = 15f;
+    [Tooltip("좌우 이동 범위 제한 (X축)")]
+    [SerializeField] private float xLimit = 10f;
 
     [Header("References")]
-    // 쉴드 이펙트 오브젝트 참조
-    public GameObject shieldEffect;
+    [SerializeField] private GameObject shieldEffect;
     #endregion
 
     #region Private Fields
-    // 물리 연산을 위한 리지드바디 컴포넌트
     private Rigidbody _rb;
-    // 사용자 입력 벡터 저장
     private Vector2 _input;
+    private float _currentForwardSpeed;
+
+    // 로그 중복 출력을 막기 위한 상태 플래그들
+    private bool _loggedForward = false;
+    private bool _loggedBackward = false;
+    private bool _loggedLeft = false;
+    private bool _loggedRight = false;
     #endregion
 
     #region Unity Lifecycle
-    /*
-     * 리지드바디 컴포넌트 초기화 수행
-     */
     private void Awake()
     {
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
+
         _rb = GetComponent<Rigidbody>();
+        // 초기 속도를 기본 속도로 설정
+        _currentForwardSpeed = defaultSpeed;
+
+        SetMoveAction(false);
     }
 
-    /*
-     * 사용자 입력 감지 및 테스트 기능 수행
-     */
     private void Update()
     {
-        // 1. 입력 처리
-        // Horizontal(A/D): 좌우 이동 입력
-        // Vertical(W/S): 상하 이동 입력
+        // 1. 움직임이 불가능한 상태면 입력 처리도 하지 않음
+        if (!canMove)
+        {
+            _input = Vector2.zero; // 입력값 초기화
+            return;
+        }
+
+        // 2. 입력 처리
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
         _input = new Vector2(h, v);
 
-        // 방어막 기능 테스트 수행
+        // 3. 방향별 최초 1회 로그 출력 로직
+        HandleInputLogging(h, v);
+
+        // 방어막 테스트
         if (Input.GetKeyDown(KeyCode.Space))
         {
             ActivateShield();
         }
     }
 
-    /*
-     * 물리 기반 이동 로직 및 기체 기울임 연출 처리 수행
-     */
     private void FixedUpdate()
     {
-        // 1. 이동 벡터 계산
-        // Z축: 자동 전진 속도 적용
-        float moveZ = forwardSpeed * Time.fixedDeltaTime;
+        // 움직임이 허용되지 않으면 물리 이동 로직 실행 안 함
+        if (!canMove) return;
 
-        // X축(좌우): 입력값에 따른 좌우 이동 속도 적용
+        // 1. 전진 속도 계산 (W/S 키 로직)
+        float targetSpeed = defaultSpeed;
+
+        if (_input.y > 0) // W키 (앞): 가속
+        {
+            targetSpeed = maxSpeed;
+        }
+        else if (_input.y < 0) // S키 (뒤): 감속
+        {
+            targetSpeed = minSpeed;
+        }
+
+        // 현재 속도를 목표 속도로 부드럽게 변경 (가속/감속)
+        _currentForwardSpeed = Mathf.Lerp(_currentForwardSpeed, targetSpeed, Time.fixedDeltaTime * acceleration);
+
+        // 2. 이동 벡터 계산
+        float moveZ = _currentForwardSpeed * Time.fixedDeltaTime;
         float moveX = _input.x * strafeSpeed * Time.fixedDeltaTime;
+        float moveY = 0f;
 
-        // Y축(상하): 입력값에 따른 상하 이동 속도 적용
-        float moveY = _input.y * strafeSpeed * Time.fixedDeltaTime;
-
-        // 2. 다음 위치 계산 (회전이 아닌 좌표 이동)
+        // 3. 다음 위치 계산
         Vector3 nextPosition = _rb.position + new Vector3(moveX, moveY, moveZ);
 
-        // 3. 이동 범위 제한 (터널 이탈 방지)
-        // X축(좌우) 위치 제한 적용
-        nextPosition.x = Mathf.Clamp(nextPosition.x, -moveLimits.x, moveLimits.x);
-        // Y축(상하) 위치 제한 적용
-        nextPosition.y = Mathf.Clamp(nextPosition.y, -moveLimits.y, moveLimits.y);
+        // 4. 이동 범위 제한 (좌우 X축만 제한)
+        nextPosition.x = Mathf.Clamp(nextPosition.x, -xLimit, xLimit);
 
-        // 4. 리지드바디 위치 갱신 수행
+        // 5. 리지드바디 위치 갱신
         _rb.MovePosition(nextPosition);
 
-        // [연출] 이동 방향에 따른 기체 회전 처리
-        // Pitch: 상하 이동 시 끄덕임 연출
-        // Yaw: 0으로 고정 (항상 정면 응시)
-        // Roll: 좌우 이동 시 날개 기울임 연출
-        Quaternion targetRotation = Quaternion.Euler(
-            -_input.y * (leanAngle / 2),
-            0,
-            -_input.x * leanAngle
-        );
-
-        // 부드러운 회전 적용 (보간 사용)
-        _rb.rotation = Quaternion.Lerp(_rb.rotation, targetRotation, Time.fixedDeltaTime * 5f);
+        // 6. 회전 초기화
+        _rb.rotation = Quaternion.identity;
     }
     #endregion
 
     #region Helper Methods
-    /*
-     * 쉴드 이펙트 활성화 및 자동 비활성화 예약 수행
-     */
+    public void SetMoveAction( bool value ) { canMove = value; Debug.Log($"Change MoveState : {canMove}"); }
+
+    /// <summary>
+    /// 입력값에 따라 처음 눌렀을 때만 로그를 출력합니다.
+    /// </summary>
+    private void HandleInputLogging(float h, float v)
+    {
+        // 임계값 (조이스틱 노이즈 방지용으로 약간의 여유를 둠)
+        float threshold = 0.1f;
+
+        // --- 전진 (W) ---
+        if (v > threshold)
+        {
+            if (!_loggedForward)
+            {
+                Debug.Log("Forward Input (W) Started");
+                IngameUIManager.Instance.CloseArrowPanel();
+                IngameUIManager.Instance.OpenArrowPanel(1);
+                _loggedForward = true; // 로그 찍음 표시
+            }
+        }
+        else
+        {
+            _loggedForward = false; // 키를 떼면 다시 초기화
+        }
+
+        // --- 후진 (S) ---
+        if (v < -threshold)
+        {
+            if (!_loggedBackward)
+            {
+                Debug.Log("Backward Input (S) Started");
+                IngameUIManager.Instance.CloseArrowPanel();
+                _loggedBackward = true;
+            }
+        }
+        else
+        {
+            _loggedBackward = false;
+        }
+
+        // --- 좌측 (A) ---
+        if (h < -threshold)
+        {
+            if (!_loggedLeft)
+            {
+                Debug.Log("Left Input (A) Started");
+                IngameUIManager.Instance.CloseArrowPanel();
+                IngameUIManager.Instance.OpenArrowPanel(2);
+                _loggedLeft = true;
+            }
+        }
+        else
+        {
+            _loggedLeft = false;
+        }
+
+        // --- 우측 (D) ---
+        if (h > threshold)
+        {
+            if (!_loggedRight)
+            {
+                Debug.Log("Right Input (D) Started");
+                IngameUIManager.Instance.CloseArrowPanel();
+                IngameUIManager.Instance.OpenArrowPanel(3);
+                _loggedRight = true;
+            }
+        }
+        else
+        {
+            _loggedRight = false;
+        }
+    }
+
+    // 외부에서 움직임을 제어하기 위한 함수
+    public void SetControlState(bool state)
+    {
+        canMove = state;
+        if (!state)
+        {
+            // 멈출 때 속도 관련 변수 초기화가 필요하다면 여기서 수행
+            _currentForwardSpeed = 0f;
+            _input = Vector2.zero;
+        }
+    }
+
     private void ActivateShield()
     {
         if (shieldEffect != null)
@@ -115,9 +219,6 @@ public class PlayerShipController : MonoBehaviour
         }
     }
 
-    /*
-     * 쉴드 이펙트 비활성화 수행
-     */
     private void DeactivateShield()
     {
         if (shieldEffect != null) shieldEffect.SetActive(false);
@@ -125,20 +226,12 @@ public class PlayerShipController : MonoBehaviour
     #endregion
 
     #region Collision Handling
-    /*
-     * 장애물 충돌 감지 및 데미지 처리 수행
-     */
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Obstacle"))
         {
-            // 데이터 매니저를 통한 데미지 적용
             if (DataManager.Instance != null) DataManager.Instance.TakeDamage(20);
-
-            // 오디오 매니저를 통한 피격음 재생
             if (AudioManager.Instance != null) AudioManager.Instance.PlaySFX("ShieldHit");
-
-            // 충돌한 장애물 제거 수행
             Destroy(other.gameObject);
         }
     }
