@@ -2,34 +2,80 @@ using System;
 using UnityEditor;
 using UnityEngine;
 
+/// <summary>
+/// 게임 내 데이터(점수, 스탯, 진행도 등) 및 통계를 관리하는 클래스
+/// </summary>
 public class DataManager : MonoBehaviour
 {
+    #region Singleton
     public static DataManager Instance { get; private set; }
+    #endregion
 
+    #region Enums
     public enum VideoType { Intro, Outro }
+    public enum LangType { Kor }
+    #endregion
+
+    #region Inspector Fields
     [Header("Video Settings")]
-    public VideoType currentVideoType;
+    // 현재 설정된 비디오 타입
+    [SerializeField] public VideoType currentVideoType;
+
+    [Header("Setting Data")]
+    [SerializeField] [Range(0, 100)] private int BGMVolume;
+    [SerializeField] [Range(0, 100)] private int SFXVolume;
+    [SerializeField] [Range(0, 100)] private int videoVolume;
+    [SerializeField] private LangType currentLangType;
 
     [Header("In-Game Data")]
-    [SerializeField] private float progress;
+    // 게임 진행도
+    [SerializeField][Range(0, 100)] private float progress;
+    // 팀 점수
     [SerializeField] private int teamScore;
-    [SerializeField] private int bullet;
-    [SerializeField] public int maxBullet = 9999;
-    [SerializeField] private int shipShield;
+    // 현재 보유 총알 수
+    [SerializeField] [Range(0, 9999)] private int bullet;
+    // 최대 보유 가능 총알 수
+    [SerializeField]public int maxBullet = 9999;
+    // 우주선 쉴드(체력)
+    [SerializeField] [Range(0, 100)] private int shipShield;
+    // 최대 쉴드 수치
     [SerializeField] public int maxShipShield = 100;
+    // 버퍼 게이지 충전량
     [SerializeField] private int bufferCharge;
-    [SerializeField] private int debufferCharge;
+    // 디버퍼 게이지 충전량
+    [SerializeField][Range(0, 10)] private int debufferCharge;
+    // 게이지 최대 충전량
     [SerializeField] private int maxCharge = 10;
 
     [Header("Statistics")]
+    // 총 플레이 시간 (초 단위)
     [SerializeField] private float totalPlayTime;
+    // 처치한 적 수
     [SerializeField] private int totalEnemiesKilled;
+    // 받은 총 데미지
     [SerializeField] private int totalDamageTaken;
 
-    private bool _isTimerRunning = false;
+    [Header("Debug Settings")]
+    // 디버그 로그 출력 여부
+    [SerializeField] private bool isDebugMode = true;
+    #endregion
 
+    #region Private Fields
+    // 타이머 작동 여부 확인
+    private bool _isTimerRunning = false;
+    #endregion
+
+    #region Events
+    // 쉴드 수치 변경 시 발생 (현재 쉴드, 최대 쉴드)
     public event Action<int, int> OnShieldChanged;
+    // 버퍼 충전 완료 또는 추가 시 발생
     public event Action OnBufferAdded;
+    #endregion
+
+    #region Unity Lifecycle
+    /*
+     * 싱글톤 인스턴스 초기화 및 파괴 방지 설정
+     */
     private void Awake()
     {
         if (Instance == null)
@@ -41,8 +87,12 @@ public class DataManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+        InitializeSettingData();
     }
 
+    /*
+     * 타이머 작동 시 플레이 시간 누적
+     */
     private void Update()
     {
         if (_isTimerRunning)
@@ -50,22 +100,42 @@ public class DataManager : MonoBehaviour
             totalPlayTime += Time.deltaTime;
         }
     }
+    #endregion
 
+    #region Public Methods - Control
+    /*
+     * 재생할 비디오 타입 설정
+     */
     public void SetVideoType(VideoType type)
     {
         currentVideoType = type;
         GameManager.Instance.Log($"[DataManager] Set Video Type: {type}");
     }
 
+    /*
+     * 게임 시작 시 모든 데이터 초기화
+     */
+    public void InitializeSettingData()
+    {
+        SetBGMVolume(100);
+        SetSFXVolume(100);
+        SetVideoVolume(100);
+
+        _isTimerRunning = true;
+        Log("[DataManager] Setting Data Initialized");
+    }
     public void InitializeGameData()
     {
         SetProgress(0);
         SetScore(0);
+        if(IngameUIManager.Instance != null) IngameUIManager.Instance.UpdateScore(0);
         SetBullet(maxBullet);
+        if (IngameUIManager.Instance != null) IngameUIManager.Instance.UpdateBullet(maxBullet);
         SetShipShield(maxShipShield);
-        SetTotalDamageTaken(0);
+        if (IngameUIManager.Instance != null) IngameUIManager.Instance.UpdateHP(maxShipShield);
         SetBuffer(0);
         SetDebuffer(0);
+        if (IngameUIManager.Instance != null) IngameUIManager.Instance.UpdateMP(0);
         SetIncrementKillCount(0);
         SetTotalDamageTaken(0);
         SetTotalPlayTime(0);
@@ -74,43 +144,82 @@ public class DataManager : MonoBehaviour
         GameManager.Instance.Log("[DataManager] Game Data Initialized");
     }
 
+    /*
+     * 플레이 시간 측정 중단
+     */
     public void StopTimer() => _isTimerRunning = false;
+    #endregion
 
-    public void AddProgress(float amount) => progress += amount;
+    #region Public Methods - Data Access
+    // --- Progress ---
+
+    public int GetBGMVolume() { return BGMVolume; }
+    public void SetBGMVolume(int value) { BGMVolume = value; }
+
+    public int GetSFXVolume() { return SFXVolume; }
+    public void SetSFXVolume(int value) { SFXVolume = value;}
+
+    public int GetVideoVolume() { return videoVolume; }
+    public void SetVideoVolume(int value) { videoVolume = value; }
+
+    /*
+     * 진행도 수치 누적
+     */
     public float GetProgress() { return progress; }
-    public void SetProgress(int value) { progress = value; }
+    public void SetProgress(float value) { progress = value; IngameUIManager.Instance.UpdateProgress(progress); }
 
-    public void AddScore(int amount) => teamScore += amount;
+    // --- Score ---
+    /*
+     * 점수 수치 누적
+     */
+    public void AddScore(int amount) { teamScore += amount; IngameUIManager.Instance.UpdateScore(teamScore); }
     public int GetScore() { return teamScore; }
-    public void SetScore(int value) { teamScore = value; }
+    public void SetScore(int value) { teamScore = value; IngameUIManager.Instance.UpdateScore(teamScore); }
 
-    public void AddBullet (int amount) => bullet += amount;
+    // --- Bullet ---
+    /*
+     * 총알 수량 추가
+     */
+    public void AddBullet(int amount) { bullet += amount; IngameUIManager.Instance.UpdateBullet(bullet); }
     public int GetBullet() { return bullet; }
-    public void SetBullet(int value) { bullet = value; }
+    public void SetBullet(int value) { bullet = value; IngameUIManager.Instance.UpdateBullet(bullet); }
 
+    // --- Shield / Health ---
+    /*
+     * 데미지 피격 처리 및 쉴드 감소
+     */
     public void TakeDamage(int amount)
     {
         shipShield -= amount;
+        IngameUIManager.Instance.UpdateHP(shipShield);
         totalDamageTaken += amount;
         OnShieldChanged?.Invoke(shipShield, maxShipShield);
     }
 
     public int GetShipShield() { return shipShield; }
 
+    /*
+     * 쉴드 수치 설정 및 UI 갱신 이벤트 발생
+     */
     public void SetShipShield(int value)
     {
         shipShield = value;
+        IngameUIManager.Instance.UpdateHP(shipShield);
         OnShieldChanged?.Invoke(shipShield, maxShipShield);
     }
 
     public int GetTotalDamageTaken() { return totalDamageTaken; }
     public void SetTotalDamageTaken(int value) { totalDamageTaken = value; }
 
+    // --- Buffer / Debuffer ---
+    /*
+     * 버퍼 게이지 충전 및 이벤트 발생
+     */
     public void AddBuffer(int amount)
     {
         int oldBuffer = bufferCharge;
-        bufferCharge += bufferCharge;
-        shipShield += amount;
+        // 최대치 내에서 버퍼량 증가
+        bufferCharge = Mathf.Min(bufferCharge + amount, maxCharge);
 
         if (bufferCharge > oldBuffer)
         {
@@ -121,14 +230,32 @@ public class DataManager : MonoBehaviour
     public int GetBuffer() { return bufferCharge; }
     public void SetBuffer(int value) { bufferCharge = value; }
 
-    public void AddDebuffer(int amount) => debufferCharge = Mathf.Min(debufferCharge + amount, maxCharge);
+    /*
+     * 디버퍼 게이지 충전
+     */
+    public void AddDebuffer(int amount) { debufferCharge = Mathf.Min(debufferCharge + amount, maxCharge); IngameUIManager.Instance.UpdateMP(debufferCharge); }
     public int GetDebuffer() { return debufferCharge; }
-    public void SetDebuffer(int value) { debufferCharge = value; }
+    public void SetDebuffer(int value) { debufferCharge = value; IngameUIManager.Instance.UpdateMP(debufferCharge); }
 
+    // --- Statistics ---
+    /*
+     * 처치한 적 카운트 증가
+     */
     public void IncrementKillCount() => totalEnemiesKilled++;
     public int GetIncrementKillCount() { return totalEnemiesKilled; }
     public void SetIncrementKillCount(int value) { totalEnemiesKilled = value; }
 
     public int GetTotalPlayTime() { return (int)totalPlayTime; }
     public void SetTotalPlayTime(int value) { totalPlayTime = value; }
+    #endregion
+
+    #region Helper Methods
+    /*
+     * 디버그 모드 시 로그 출력 수행
+     */
+    public void Log(string message)
+    {
+        if (isDebugMode) Debug.Log(message);
+    }
+    #endregion
 }

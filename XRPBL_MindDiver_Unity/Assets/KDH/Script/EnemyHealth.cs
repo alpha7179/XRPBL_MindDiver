@@ -3,7 +3,7 @@ using UnityEngine;
 public class EnemyHealth : MonoBehaviour
 {
     // 같은 오브젝트에 있는 IrregularBoundaryFollower 컴포넌트 참조
-    private IrregularBoundaryFollower follower;
+    private EnemyMover enemyMover;
 
     [Header("적 설정")]
     public float currentHealth = 10f; // 현재 체력
@@ -20,8 +20,8 @@ public class EnemyHealth : MonoBehaviour
     private void Awake()
     {
         // 컴포넌트 참조 가져오기
-        follower = GetComponent<IrregularBoundaryFollower>();
-        if (follower == null)
+        enemyMover = GetComponent<EnemyMover>();
+        if (enemyMover == null)
         {
             Debug.LogError("같은 오브젝트에 IrregularBoundaryFollower 컴포넌트가 없습니다. 비행 오브젝트에 이 두 스크립트가 모두 있는지 확인하세요.");
         }
@@ -43,9 +43,9 @@ public class EnemyHealth : MonoBehaviour
             Die();
         }
         // 3. 피격 시 이동 목표 변경
-        if (follower != null)
+        if (enemyMover != null)
         {
-            follower.ChangeTargetImmediately();
+            enemyMover.ChangeTargetImmediately();
         }
     }
 

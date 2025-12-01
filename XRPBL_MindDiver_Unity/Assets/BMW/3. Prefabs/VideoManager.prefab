@@ -449,14 +449,19 @@ MonoBehaviour:
   - {fileID: 313118463096964381}
   - {fileID: 6049407098282116435}
   - {fileID: 1590863256110922624}
+  VideoPanels:
+  - {fileID: 8981773956181220112}
+  - {fileID: 5212670197820213422}
+  - {fileID: 7426026868170095420}
   introClips:
-  - {fileID: 32900000, guid: 09fce3aca4730484fbb987e180e6982a, type: 3}
-  - {fileID: 32900000, guid: 09fce3aca4730484fbb987e180e6982a, type: 3}
-  - {fileID: 32900000, guid: 09fce3aca4730484fbb987e180e6982a, type: 3}
+  - {fileID: 32900000, guid: dc3b1445c9bdf6a45a8eda1757f81ebf, type: 3}
+  - {fileID: 32900000, guid: dc3b1445c9bdf6a45a8eda1757f81ebf, type: 3}
+  - {fileID: 32900000, guid: dc3b1445c9bdf6a45a8eda1757f81ebf, type: 3}
   outroClips:
-  - {fileID: 32900000, guid: 05c26e34aba0760439be0b0e3b75d187, type: 3}
-  - {fileID: 32900000, guid: 05c26e34aba0760439be0b0e3b75d187, type: 3}
-  - {fileID: 32900000, guid: 05c26e34aba0760439be0b0e3b75d187, type: 3}
+  - {fileID: 32900000, guid: dc3b1445c9bdf6a45a8eda1757f81ebf, type: 3}
+  - {fileID: 32900000, guid: dc3b1445c9bdf6a45a8eda1757f81ebf, type: 3}
+  - {fileID: 32900000, guid: dc3b1445c9bdf6a45a8eda1757f81ebf, type: 3}
+  isDebugMode: 1
 --- !u!1 &4107476928381393283
 GameObject:
   m_ObjectHideFlags: 0
@@ -549,7 +554,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1960366463724981836
 RectTransform:
   m_ObjectHideFlags: 0
@@ -725,7 +730,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &6333333631286220215
 RectTransform:
   m_ObjectHideFlags: 0
@@ -973,7 +978,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &5192893604672310971
 RectTransform:
   m_ObjectHideFlags: 0

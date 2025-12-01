@@ -1,107 +1,118 @@
-using UnityEngine;
+using System;
 using System.Collections;
-using System; // Func 사용을 위해 추가
+using UnityEngine;
+using static GamePhaseManager;
 
+/// <summary>
+/// 게임의 진행 단계(페이즈)와 각 단계별 목표 및 시간 제한을 관리하는 클래스
+/// </summary>
 public class GamePhaseManager : MonoBehaviour
 {
-    public enum Phase { Phase1, Phase2, Phase3, Complete, Null }
+    #region Enums
+    public enum Phase { PrePhase,Phase1, Phase2, Phase3, Complete, Null }
+    #endregion
+
+    #region Inspector Fields
+    // 현재 진행 중인 페이즈 상태
     public Phase currentPhase;
 
     [Header("Phase Settings")]
+    // 1페이즈 제한 시간
     public float phase1Duration = 80f;
+    // 2페이즈 제한 시간
     public float phase2Duration = 110f;
 
     [Header("Phase 2 Conditions")]
+    // 2페이즈 목표 처치 수
     public int phase2KillGoal = 20;
 
     [Header("Target Zone")]
-    [Tooltip("Phase 1에서 도달해야 할 목표 지점 오브젝트 (활성화/비활성화 제어용)")]
+    [Tooltip("Phase 1에서 도달해야 할 목표 지점 오브젝트")]
     [SerializeField] private GameObject phase1TargetZone;
 
-    [Header("디버그 로그")]
+    [Header("References")]
+    [Tooltip("거리 계산을 위한 플레이어 트랜스폼 (필수 할당)")]
+    [SerializeField] private Transform playerTransform; // [추가] 플레이어 위치 참조
+
+    [Header("Debug Settings")]
+    // 디버그 로그 출력 여부
     [SerializeField] private bool isDebugMode = true;
+    #endregion
 
-    // 내부 상태 변수
+    #region Private Fields
+    // 현재 페이즈 내 처치 수 누적
     private int _phaseKillCount;
-    private bool isZoneReached = false; // 존 도달 여부 체크 변수
+    // 목표 지점 도달 여부 확인
+    private bool isZoneReached = false;
 
-    // UI 매니저 등 외부 참조가 필요하다면 추가 (ShowTimedMission에서 사용된다면)
-    // [SerializeField] private IngameUIManager uiManager; 
+    // [추가] 거리 계산용 변수
+    private Vector3 _startPosition; // 페이즈 1 시작 위치
+    private float _totalDistance;   // 시작점 ~ 목표점 총 거리
+    #endregion
 
+    #region Unity Lifecycle
     private void Start()
     {
-        // 게임 시작 시 초기화
         if (DataManager.Instance != null)
             DataManager.Instance.InitializeGameData();
 
-        // 코루틴 기반의 시나리오 시작
         StartCoroutine(GameFlowRoutine());
     }
 
-    // ZoneTrigger 등 외부에서 호출하여 도달 상태를 true로 설정하는 메서드
-    public void SetZoneReached(bool reached)
+    // [추가] 매 프레임 진행도 업데이트
+    private void Update()
     {
-        isZoneReached = reached;
-        Log($"[GamePhaseManager] Zone Reached: {reached}");
+        // 1페이즈 진행 중일 때만 거리 계산 수행
+        if (currentPhase == Phase.Phase1)
+        {
+            UpdatePhase1Progress();
+        }
     }
 
-    /// <summary>
-    /// 전체 게임 페이즈 흐름을 제어하는 메인 코루틴
-    /// </summary>
+    #endregion
+
+    #region Coroutines
     private IEnumerator GameFlowRoutine()
     {
-        // -------------------------------------------------------------------------
-        // Phase 1 시작 (존 도달 미션)
-        // -------------------------------------------------------------------------
+        // PrePhase 시작
+        StartPhase(Phase.PrePhase);
+
+        if (PlayerMover.Instance != null) PlayerMover.Instance.SetMoveAction(false);
+
+        IngameUIManager.Instance.OpenMainPanel();
+        IngameUIManager.Instance.OpenInfoPanel();
+
+        // Phase 1 시작
         StartPhase(Phase.Phase1);
 
-        // 목표 존 활성화 (필요한 경우)
+        if (PlayerMover.Instance != null) PlayerMover.Instance.SetMoveAction(true);
+
         if (phase1TargetZone != null) phase1TargetZone.SetActive(true);
-        isZoneReached = false; // 상태 초기화
+        isZoneReached = false;
 
-        // Phase 1은 "시간이 다 되거나" OR "존에 도달하면" 종료되는 조건이라고 가정
-        // 만약 '존 도달'이 필수라면 시간 제한 없이 wait하거나, 시간 내에 도달 못하면 실패 처리 등을 추가 가능
-        // 여기서는 GameStepManager처럼 '조건(isZoneReached)을 만족할 때까지 대기'하는 방식으로 구현
-
-        // 조건이 만족될 때까지 대기 (제한 시간 phase1Duration 적용)
         yield return StartCoroutine(WaitForConditionOrTime(() => isZoneReached, phase1Duration));
 
-        // 목표 존 비활성화
         if (phase1TargetZone != null) phase1TargetZone.SetActive(false);
 
-        // -------------------------------------------------------------------------
-        // Phase 2 시작 (킬 카운트 or 시간 경과)
-        // -------------------------------------------------------------------------
+        // Phase 2 시작
         StartPhase(Phase.Phase2);
 
-        // Phase 2 조건: 킬 목표 달성 또는 시간 종료
         yield return StartCoroutine(WaitForConditionOrTime(() => _phaseKillCount >= phase2KillGoal, phase2Duration));
 
-        // -------------------------------------------------------------------------
-        // Phase 3 시작 (보스전)
-        // -------------------------------------------------------------------------
+        // Phase 3 시작
         StartPhase(Phase.Phase3);
-
-        // 보스전은 보통 보스가 죽을 때까지 무한 대기 (OnBossDefeated에서 다음 단계 호출)
-        // 여기서는 코루틴 흐름을 잠시 멈추고 이벤트 대기 상태로 둠
-        // OnBossDefeated가 호출되면 StartPhase(Complete)가 실행됨
     }
 
-    /// <summary>
-    /// GameStepManager의 ShowTimedMission과 유사한 기능을 하는 대기 코루틴
-    /// 조건이 true가 되거나 시간이 다 될 때까지 대기함
-    /// </summary>
     private IEnumerator WaitForConditionOrTime(Func<bool> condition, float duration)
     {
         float timer = 0f;
 
         while (timer < duration)
         {
-            // 성공 조건 체크
             if (condition != null && condition.Invoke())
             {
-                Log("[GamePhaseManager] Condition Met! Proceeding to next phase.");
-                yield break; // 코루틴 종료 -> 다음 페이즈로 이동
+                Log($"[GamePhaseManager] End Phase: {currentPhase}. Proceeding to next phase.");
+                yield break;
             }
 
             timer += Time.deltaTime;
@@ -110,6 +121,14 @@ public class GamePhaseManager : MonoBehaviour
 
         Log("[GamePhaseManager] Time's up! Proceeding to next phase.");
     }
+    #endregion
+
+    #region Public Methods
+    public void SetZoneReached(bool reached)
+    {
+        isZoneReached = reached;
+        Log($"[GamePhaseManager] Zone Reached: {reached}");
+    }
 
     public void StartPhase(Phase phase)
     {
@@ -117,41 +136,39 @@ public class GamePhaseManager : MonoBehaviour
         _phaseKillCount = 0;
 
         Log($"[GamePhaseManager] Start Phase: {phase}");
+        if (AudioManager.Instance != null) AudioManager.Instance.StopBGM();
+        if (AudioManager.Instance != null && GameManager.Instance != null) AudioManager.Instance.PlayBGM(GameManager.Instance.currentState, currentPhase);
 
         switch (phase)
         {
+            case Phase.PrePhase:
+                break;
+
             case Phase.Phase1:
-                // EnemyManager.StartSpawn(Type.Worm);
-                if (AudioManager.Instance) AudioManager.Instance.PlayBGM(GameManager.Instance.currentState, Phase.Phase1);
+                InitializePhase1Distance();
                 break;
+
             case Phase.Phase2:
-                // EnemyManager.StartSpawn(Type.Rock);
-                if (AudioManager.Instance) AudioManager.Instance.PlayBGM(GameManager.Instance.currentState, Phase.Phase2);
                 break;
+
             case Phase.Phase3:
-                // EnemyManager.SpawnBoss();
-                if (AudioManager.Instance) AudioManager.Instance.PlayBGM(GameManager.Instance.currentState, Phase.Phase3);
                 break;
+
             case Phase.Complete:
-                if (GameManager.Instance) GameManager.Instance.ChangeState(GameManager.GameState.OutroVideo);
                 break;
         }
     }
 
-    // 적 처치 시 호출
     public void OnEnemyKilled()
     {
         _phaseKillCount++;
         if (DataManager.Instance) DataManager.Instance.IncrementKillCount();
     }
 
-    // 보스 처치 시 호출
     public void OnBossDefeated()
     {
         if (DataManager.Instance) DataManager.Instance.StopTimer();
-
-        // 보스 처치 시 바로 완료 단계로 이동 (코루틴 흐름과 별개로 강제 전환)
-        StopAllCoroutines(); // 진행 중인 대기 코루틴 중단
+        StopAllCoroutines();
         StartPhase(Phase.Complete);
     }
 
@@ -159,4 +176,43 @@ public class GamePhaseManager : MonoBehaviour
     {
         if (isDebugMode) Debug.Log(message);
     }
+    #endregion
+
+    #region Private Helper Methods (New)
+
+    // [추가] 페이즈 1 거리 데이터 초기화
+    private void InitializePhase1Distance()
+    {
+        if (playerTransform != null && phase1TargetZone != null)
+        {
+            _startPosition = playerTransform.position;
+            _totalDistance = Vector3.Distance(_startPosition, phase1TargetZone.transform.position) - playerTransform.localScale.z/2;
+
+            Log($"[Distance Init] Start: {_startPosition}, Target Dist: {_totalDistance}");
+        }
+        else
+        {
+            Debug.LogWarning("[GamePhaseManager] PlayerTransform or TargetZone is missing!");
+        }
+    }
+
+    private void UpdatePhase1Progress()
+    {
+        if (playerTransform == null || _totalDistance <= 0.001f) return;
+
+        // 시작점에서 현재 플레이어 위치까지 이동한 거리 계산
+        float distanceCovered = Vector3.Distance(_startPosition, playerTransform.position);
+
+        // 진행률 계산 (이동 거리 / 총 거리) * 100
+        float progressPercentage = (distanceCovered / _totalDistance) * 100f;
+
+        // 0 ~ 100 사이로 값 제한 (목표 지점을 지나쳐도 100을 넘지 않도록)
+        int progressInt = Mathf.RoundToInt(Mathf.Clamp(progressPercentage, 0f, 100f));
+
+        // DataManager에 값 반영 (SetProgress 사용)
+        // AddProgress는 '증감'이므로 현재 절대값을 넣기 위해 SetProgress를 사용합니다.
+        if (DataManager.Instance != null) DataManager.Instance.SetProgress(progressInt);
+    }
+
+    #endregion
 }

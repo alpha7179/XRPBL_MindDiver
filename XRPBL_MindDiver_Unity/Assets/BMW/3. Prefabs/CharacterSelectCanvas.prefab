@@ -17,7 +17,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2745195044970102451
 RectTransform:
   m_ObjectHideFlags: 0
@@ -823,7 +823,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4799001523034694076
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1180,7 +1180,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2437314257386678271
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1938,10 +1938,14 @@ MonoBehaviour:
   - {fileID: 3088793437894628565}
   - {fileID: 1060334938111105929}
   - {fileID: 186650850244804533}
+  VideoPanels:
+  - {fileID: 127075729439020733}
+  - {fileID: 4157039504182495988}
+  - {fileID: 6710225982660397637}
   outroClips:
-  - {fileID: 32900000, guid: 09fce3aca4730484fbb987e180e6982a, type: 3}
-  - {fileID: 32900000, guid: 09fce3aca4730484fbb987e180e6982a, type: 3}
-  - {fileID: 32900000, guid: 09fce3aca4730484fbb987e180e6982a, type: 3}
+  - {fileID: 32900000, guid: dc3b1445c9bdf6a45a8eda1757f81ebf, type: 3}
+  - {fileID: 32900000, guid: dc3b1445c9bdf6a45a8eda1757f81ebf, type: 3}
+  - {fileID: 32900000, guid: dc3b1445c9bdf6a45a8eda1757f81ebf, type: 3}
   requiredHoldTime: 3
   FrontButtonText: {fileID: 7624357000790489771}
   LeftButtonText: {fileID: 3812749809935811722}
