@@ -43,11 +43,17 @@ public class IngameUIManager : MonoBehaviour
     [SerializeField] public List<TextMeshProUGUI> HPTexts;
     [SerializeField] public List<Slider> HPSliders;
 
-    [SerializeField] public List<TextMeshProUGUI> MPTexts;
-    [SerializeField] public List<Slider> MPSliders;
+    [SerializeField] public List<TextMeshProUGUI> ShieldTexts;
+    [SerializeField] public List<Slider> ShieldSliders;
 
-    [SerializeField] public List<TextMeshProUGUI> BulletTexts;
-    [SerializeField] public List<Slider> BulletSliders;
+    [SerializeField] public TextMeshProUGUI BulletText;
+    [SerializeField] public Slider BulletSlider;
+
+    [SerializeField] public TextMeshProUGUI BuffText;
+    [SerializeField] public Slider BuffSlider;
+
+    [SerializeField] public TextMeshProUGUI DeBuffText;
+    [SerializeField] public Slider DeBuffSlider;
 
     [SerializeField] private List<GameObject> arrowPanels;
 
@@ -76,16 +82,21 @@ public class IngameUIManager : MonoBehaviour
     [SerializeField] private float maxRadius = 1;
     [SerializeField] private float minRadius = 0f;
     [SerializeField] private float bufferEffectDuration = 2.0f;
+    [SerializeField] private float debufferEffectDuration = 2.0f;
 
     [Header("Debug Settings")]
     [SerializeField] private bool isDebugMode = true;
     #endregion
 
     #region Private Fields
+    private int currentHealth;
+    private int maxHealth;
     private int currentShield;
     private int maxShield;
     private bool isBufferEffectActive = false;
     private float bufferTimer = 0f;
+    private bool isDeBufferEffectActive = false;
+    private float debufferTimer = 0f;
     private bool isDisplayPanel = false;
 
     // 코루틴 관리를 위한 딕셔너리
@@ -110,11 +121,15 @@ public class IngameUIManager : MonoBehaviour
 
         if (DataManager.Instance != null)
         {
+            currentHealth = DataManager.Instance.GetShipHealth();
+            maxHealth = DataManager.Instance.maxShipHealth;
             currentShield = DataManager.Instance.GetShipShield();
             maxShield = DataManager.Instance.maxShipShield;
 
             GameManager.Instance.OnPauseStateChanged += HandlePauseState;
+            DataManager.Instance.OnHealthChanged += HandleHealthChange;
             DataManager.Instance.OnShieldChanged += HandleShieldChange;
+            DataManager.Instance.OnDeBufferAdded += HandleDeBufferAdded;
             DataManager.Instance.OnBufferAdded += HandleBufferAdded;
         }
 
@@ -126,13 +141,21 @@ public class IngameUIManager : MonoBehaviour
         foreach (var sliders in HPSliders) if (sliders) sliders.maxValue = 100;
         foreach (var sliders in HPSliders) if (sliders) sliders.wholeNumbers = true;
 
-        foreach (var sliders in MPSliders) if (sliders) sliders.minValue = 0;
-        foreach (var sliders in MPSliders) if (sliders) sliders.maxValue = 100;
-        foreach (var sliders in MPSliders) if (sliders) sliders.wholeNumbers = true;
+        foreach (var sliders in ShieldSliders) if (sliders) sliders.minValue = 0;
+        foreach (var sliders in ShieldSliders) if (sliders) sliders.maxValue = 100;
+        foreach (var sliders in ShieldSliders) if (sliders) sliders.wholeNumbers = true;
 
-        foreach (var sliders in BulletSliders) if (sliders) sliders.minValue = 0;
-        foreach (var sliders in BulletSliders) if (sliders) sliders.maxValue = 100;
-        foreach (var sliders in BulletSliders) if (sliders) sliders.wholeNumbers = true;
+        BulletSlider.minValue = 0;
+        BulletSlider.maxValue = 100;
+        BulletSlider.wholeNumbers = true;
+
+        BuffSlider.minValue = 0;
+        BuffSlider.maxValue = 100;
+        BuffSlider.wholeNumbers = true;
+
+        DeBuffSlider.minValue = 0;
+        DeBuffSlider.maxValue = 100;
+        DeBuffSlider.wholeNumbers = true;
     }
 
     private void OnDestroy()
@@ -142,7 +165,9 @@ public class IngameUIManager : MonoBehaviour
 
         if (DataManager.Instance != null)
         {
+            DataManager.Instance.OnHealthChanged -= HandleHealthChange;
             DataManager.Instance.OnShieldChanged -= HandleShieldChange;
+            DataManager.Instance.OnDeBufferAdded -= HandleDeBufferAdded;
             DataManager.Instance.OnBufferAdded -= HandleBufferAdded;
         }
     }
@@ -158,7 +183,13 @@ public class IngameUIManager : MonoBehaviour
     {
         currentShield = current;
         maxShield = max;
-        // 쉴드 변경 시 UI 즉시 업데이트 (UpdateHP 호출)
+        UpdateShield(current);
+    }
+
+    private void HandleHealthChange(int current, int max)
+    {
+        currentHealth = current;
+        maxHealth = max;
         UpdateHP(current);
     }
 
@@ -166,8 +197,14 @@ public class IngameUIManager : MonoBehaviour
     {
         bufferTimer = bufferEffectDuration;
         isBufferEffectActive = true;
-        // 버퍼 획득 시 UI 업데이트 (필요 시 UpdateMP 호출)
-        UpdateMP(DataManager.Instance.GetBuffer());
+        UpdateBuff(DataManager.Instance.GetBuffer());
+    }
+
+    private void HandleDeBufferAdded()
+    {
+        debufferTimer = debufferEffectDuration;
+        isDeBufferEffectActive = true;
+        UpdateDeBuff(DataManager.Instance.GetDeBuffer());
     }
 
     private void HandlePauseState(bool isPaused)
@@ -247,8 +284,10 @@ public class IngameUIManager : MonoBehaviour
             UpdateProgress(DataManager.Instance.GetProgress());
             UpdateScore(DataManager.Instance.GetScore());
             UpdateBullet(DataManager.Instance.GetBullet());
-            UpdateHP(DataManager.Instance.GetShipShield());
-            UpdateMP(DataManager.Instance.GetBuffer());
+            UpdateHP(DataManager.Instance.GetShipHealth());
+            UpdateShield(DataManager.Instance.GetShipShield());
+            UpdateBuff(DataManager.Instance.GetBuffer());
+            UpdateDeBuff(DataManager.Instance.GetDeBuffer());
         }
     }
 
@@ -314,16 +353,28 @@ public class IngameUIManager : MonoBehaviour
         foreach (var slider in HPSliders) if (slider) slider.value = value;
     }
 
-    public void UpdateMP(int value)
+    public void UpdateShield(int value)
     {
-        foreach (var text in MPTexts) if (text) text.text = value.ToString();
-        foreach (var slider in MPSliders) if (slider) slider.value = value;
+        foreach (var text in ShieldTexts) if (text) text.text = value.ToString();
+        foreach (var slider in ShieldSliders) if (slider) slider.value = value;
     }
 
     public void UpdateBullet(int value)
     {
-        foreach (var text in BulletTexts) if (text) text.text = value.ToString();
-        foreach (var slider in BulletSliders) if (slider) slider.value = value;
+        BulletText.text = value.ToString();
+        BulletSlider.value = value;
+    }
+
+    public void UpdateBuff(int value)
+    {
+        BuffText.text = value.ToString();
+        BuffSlider.value = value;
+    }
+
+    public void UpdateDeBuff(int value)
+    {
+        DeBuffText.text = value.ToString();
+        DeBuffSlider.value = value;
     }
 
     public void UpdateProgress(float value)

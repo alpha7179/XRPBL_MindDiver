@@ -55,7 +55,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Radius: 0.8187292
+    - _Radius: -0.03127883
     - _Softness: 1
     m_Colors:
     - _VignetteColor: {r: 1, g: 0, b: 0, a: 1}

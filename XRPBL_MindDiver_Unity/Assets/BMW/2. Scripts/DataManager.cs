@@ -32,20 +32,24 @@ public class DataManager : MonoBehaviour
     [SerializeField][Range(0, 100)] private float progress;
     // 팀 점수
     [SerializeField] private int teamScore;
-    // 현재 보유 총알 수
-    [SerializeField] [Range(0, 9999)] private int bullet;
-    // 최대 보유 가능 총알 수
-    [SerializeField]public int maxBullet = 9999;
-    // 우주선 쉴드(체력)
-    [SerializeField] [Range(0, 100)] private int shipShield;
+    // 우주선 체력
+    [SerializeField][Range(0, 100)] private int shipHealth;
+    // 최대 체력 수치
+    [SerializeField] public int maxShipHealth = 100;
+    // 우주선 쉴드
+    [SerializeField][Range(0, 100)] private int shipShield;
     // 최대 쉴드 수치
     [SerializeField] public int maxShipShield = 100;
     // 버퍼 게이지 충전량
-    [SerializeField] private int bufferCharge;
+    [SerializeField][Range(0, 10)] private int bufferCharge;
     // 디버퍼 게이지 충전량
     [SerializeField][Range(0, 10)] private int debufferCharge;
     // 게이지 최대 충전량
     [SerializeField] private int maxCharge = 10;
+    // 현재 보유 총알 수
+    [SerializeField] [Range(0, 9999)] private int bullet;
+    // 최대 보유 가능 총알 수
+    [SerializeField]public int maxBullet = 9999;
 
     [Header("Statistics")]
     // 총 플레이 시간 (초 단위)
@@ -66,10 +70,14 @@ public class DataManager : MonoBehaviour
     #endregion
 
     #region Events
+    // 체력 수치 변경 시 발생 (현재 쉴드, 최대 쉴드)
+    public event Action<int, int> OnHealthChanged;
     // 쉴드 수치 변경 시 발생 (현재 쉴드, 최대 쉴드)
     public event Action<int, int> OnShieldChanged;
     // 버퍼 충전 완료 또는 추가 시 발생
     public event Action OnBufferAdded;
+    // 디버퍼 충전 완료 또는 추가 시 발생
+    public event Action OnDeBufferAdded;
     #endregion
 
     #region Unity Lifecycle
@@ -129,13 +137,16 @@ public class DataManager : MonoBehaviour
         SetProgress(0);
         SetScore(0);
         if(IngameUIManager.Instance != null) IngameUIManager.Instance.UpdateScore(0);
-        SetBullet(maxBullet);
-        if (IngameUIManager.Instance != null) IngameUIManager.Instance.UpdateBullet(maxBullet);
+        SetShipHealth(maxShipHealth);
+        if (IngameUIManager.Instance != null) IngameUIManager.Instance.UpdateHP(maxShipHealth);
         SetShipShield(maxShipShield);
         if (IngameUIManager.Instance != null) IngameUIManager.Instance.UpdateHP(maxShipShield);
         SetBuffer(0);
-        SetDebuffer(0);
-        if (IngameUIManager.Instance != null) IngameUIManager.Instance.UpdateMP(0);
+        if (IngameUIManager.Instance != null) IngameUIManager.Instance.UpdateBuff(0);
+        SetDeBuffer(0);
+        if (IngameUIManager.Instance != null) IngameUIManager.Instance.UpdateDeBuff(0);
+        SetBullet(maxBullet);
+        if (IngameUIManager.Instance != null) IngameUIManager.Instance.UpdateBullet(maxBullet);
         SetIncrementKillCount(0);
         SetTotalDamageTaken(0);
         SetTotalPlayTime(0);
@@ -176,35 +187,40 @@ public class DataManager : MonoBehaviour
     public int GetScore() { return teamScore; }
     public void SetScore(int value) { teamScore = value; IngameUIManager.Instance.UpdateScore(teamScore); }
 
-    // --- Bullet ---
-    /*
-     * 총알 수량 추가
-     */
-    public void AddBullet(int amount) { bullet += amount; IngameUIManager.Instance.UpdateBullet(bullet); }
-    public int GetBullet() { return bullet; }
-    public void SetBullet(int value) { bullet = value; IngameUIManager.Instance.UpdateBullet(bullet); }
-
     // --- Shield / Health ---
     /*
      * 데미지 피격 처리 및 쉴드 감소
      */
     public void TakeDamage(int amount)
     {
-        shipShield -= amount;
-        IngameUIManager.Instance.UpdateHP(shipShield);
+        if (shipShield > 0)
+        {
+            shipShield -= amount;
+            IngameUIManager.Instance.UpdateShield(shipShield);
+            OnShieldChanged?.Invoke(shipShield, maxShipShield);
+        }
+        else
+        {
+            shipHealth -= amount;
+            IngameUIManager.Instance.UpdateHP(shipHealth);
+            OnHealthChanged?.Invoke(shipHealth, maxShipHealth);
+        }
         totalDamageTaken += amount;
-        OnShieldChanged?.Invoke(shipShield, maxShipShield);
+    }
+
+    public int GetShipHealth() { return shipHealth; }
+    public void SetShipHealth(int value)
+    {
+        shipHealth = value;
+        IngameUIManager.Instance.UpdateHP(shipHealth);
+        OnHealthChanged?.Invoke(shipHealth, maxShipHealth);
     }
 
     public int GetShipShield() { return shipShield; }
-
-    /*
-     * 쉴드 수치 설정 및 UI 갱신 이벤트 발생
-     */
     public void SetShipShield(int value)
     {
         shipShield = value;
-        IngameUIManager.Instance.UpdateHP(shipShield);
+        IngameUIManager.Instance.UpdateShield(shipShield);
         OnShieldChanged?.Invoke(shipShield, maxShipShield);
     }
 
@@ -213,29 +229,26 @@ public class DataManager : MonoBehaviour
 
     // --- Buffer / Debuffer ---
     /*
-     * 버퍼 게이지 충전 및 이벤트 발생
-     */
-    public void AddBuffer(int amount)
-    {
-        int oldBuffer = bufferCharge;
-        // 최대치 내에서 버퍼량 증가
-        bufferCharge = Mathf.Min(bufferCharge + amount, maxCharge);
-
-        if (bufferCharge > oldBuffer)
-        {
-            OnBufferAdded?.Invoke();
-        }
-    }
-
-    public int GetBuffer() { return bufferCharge; }
-    public void SetBuffer(int value) { bufferCharge = value; }
+    * 버퍼 게이지 충전
+    */
+    public void AddBuffer(int amount) { bufferCharge = Mathf.Min(bufferCharge + amount, maxCharge); IngameUIManager.Instance.UpdateBuff(bufferCharge); }
+    public int GetBuffer() { return debufferCharge; }
+    public void SetBuffer(int value) { bufferCharge = value; IngameUIManager.Instance.UpdateBuff(bufferCharge); }
 
     /*
      * 디버퍼 게이지 충전
      */
-    public void AddDebuffer(int amount) { debufferCharge = Mathf.Min(debufferCharge + amount, maxCharge); IngameUIManager.Instance.UpdateMP(debufferCharge); }
-    public int GetDebuffer() { return debufferCharge; }
-    public void SetDebuffer(int value) { debufferCharge = value; IngameUIManager.Instance.UpdateMP(debufferCharge); }
+    public void AddDeBuffer(int amount) { debufferCharge = Mathf.Min(debufferCharge + amount, maxCharge); IngameUIManager.Instance.UpdateDeBuff(debufferCharge); }
+    public int GetDeBuffer() { return debufferCharge; }
+    public void SetDeBuffer(int value) { debufferCharge = value; IngameUIManager.Instance.UpdateDeBuff(debufferCharge); }
+
+    // --- Bullet ---
+    /*
+     * 총알 수량 추가
+     */
+    public void AddBullet(int amount) { bullet += amount; IngameUIManager.Instance.UpdateBullet(bullet); }
+    public int GetBullet() { return bullet; }
+    public void SetBullet(int value) { bullet = value; IngameUIManager.Instance.UpdateBullet(bullet); }
 
     // --- Statistics ---
     /*
