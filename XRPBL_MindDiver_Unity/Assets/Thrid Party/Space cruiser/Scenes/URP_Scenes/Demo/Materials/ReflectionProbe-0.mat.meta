@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 3fdc28730d398264c87eaf6a846caf9e
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 301943
+  packageName: Sci-Fi Space Cruiser ( with Interior)
+  packageVersion: 1.0
+  assetPath: Assets/Space cruiser/Scenes/URP_Scenes/Demo/Materials/ReflectionProbe-0.mat
+  uploadId: 724725

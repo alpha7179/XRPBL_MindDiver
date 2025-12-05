@@ -1,0 +1,20 @@
+fileFormatVersion: 2
+guid: 43183468ccfa6bf48bc4003d2ba05e8a
+timeCreated: 1523379061
+licenseType: Store
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 112270
+  packageName: Warp Effect
+  packageVersion: 1.6.1
+  assetPath: Assets/Warp_Effect/Assets/Scripts/WarpEffect.cs
+  uploadId: 314686

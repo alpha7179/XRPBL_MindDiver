@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b81a8941a0dc4c64d9cf57a74e65dbe8
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 301943
+  packageName: Sci-Fi Space Cruiser ( with Interior)
+  packageVersion: 1.0
+  assetPath: Assets/Space cruiser/CinematicTemplate/Settings/demo/Props/Materials/M_gizLightPoint_body.mat
+  uploadId: 724725

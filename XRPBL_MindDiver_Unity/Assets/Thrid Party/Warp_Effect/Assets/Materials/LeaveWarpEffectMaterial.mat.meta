@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: a82031893eaf3ca41b8a8a6f94094b1a
+timeCreated: 1519230648
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 112270
+  packageName: Warp Effect
+  packageVersion: 1.6.1
+  assetPath: Assets/Warp_Effect/Assets/Materials/LeaveWarpEffectMaterial.mat
+  uploadId: 314686

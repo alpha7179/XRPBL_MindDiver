@@ -1,0 +1,20 @@
+fileFormatVersion: 2
+guid: 8e9488e699f35844fb59c7f8a6bb7057
+timeCreated: 1519230142
+licenseType: Store
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 112270
+  packageName: Warp Effect
+  packageVersion: 1.6.1
+  assetPath: Assets/Warp_Effect/Assets/Scripts/LeaveWarpEffect.cs
+  uploadId: 314686

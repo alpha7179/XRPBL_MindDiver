@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 25c8f8ac43387f24494dd192aed0c0bc
+timeCreated: 1523573866
+licenseType: Store
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 112270
+  packageName: Warp Effect
+  packageVersion: 1.6.1
+  assetPath: Assets/Warp_Effect/WarpEffect_Manual.pdf
+  uploadId: 314686

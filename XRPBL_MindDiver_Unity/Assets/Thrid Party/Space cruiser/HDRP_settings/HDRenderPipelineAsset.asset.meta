@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 55d5a9faf5ebdc2478d08ee420d145b4
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 301943
+  packageName: Sci-Fi Space Cruiser ( with Interior)
+  packageVersion: 1.0
+  assetPath: Assets/Space cruiser/HDRP_settings/HDRenderPipelineAsset.asset
+  uploadId: 724725

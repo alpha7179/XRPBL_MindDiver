@@ -25,6 +25,7 @@ public class DataManager : MonoBehaviour
     [SerializeField] [Range(0, 100)] private int BGMVolume;
     [SerializeField] [Range(0, 100)] private int SFXVolume;
     [SerializeField] [Range(0, 100)] private int videoVolume;
+    [SerializeField] [Range(0, 100)] private int NARVolume;
     [SerializeField] private LangType currentLangType;
 
     [Header("In-Game Data")]
@@ -128,6 +129,7 @@ public class DataManager : MonoBehaviour
         SetBGMVolume(100);
         SetSFXVolume(100);
         SetVideoVolume(100);
+        SetNARVolume(100);
 
         _isTimerRunning = true;
         Log("[DataManager] Setting Data Initialized");
@@ -172,6 +174,9 @@ public class DataManager : MonoBehaviour
 
     public int GetVideoVolume() { return videoVolume; }
     public void SetVideoVolume(int value) { videoVolume = value; }
+
+    public int GetNARVolume() { return NARVolume; }
+    public void SetNARVolume(int value) { NARVolume = value; }
 
     /*
      * 진행도 수치 누적

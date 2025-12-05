@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: c18afbe84ee6c4fe782ad1b3b9347f9a
+timeCreated: 1467049557
+licenseType: Store
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 86544
+  packageName: Tunnel FX 2
+  packageVersion: 3.2.1
+  assetPath: Assets/TunnelFX2/Demo/FreeCameraMove.cs
+  uploadId: 645307

@@ -1,0 +1,29 @@
+fileFormatVersion: 2
+guid: 2e99078032b7f664dbbcbf2cd8f10821
+AudioImporter:
+  externalObjects: {}
+  serializedVersion: 6
+  defaultSettings:
+    loadType: 0
+    sampleRateSetting: 0
+    sampleRateOverride: 44100
+    compressionFormat: 1
+    quality: 1
+    conversionMode: 0
+  platformSettingOverrides: {}
+  forceToMono: 0
+  normalize: 1
+  preloadAudioData: 1
+  loadInBackground: 0
+  ambisonic: 0
+  3D: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 274725
+  packageName: Sci-Fi Loading Screen VFX Pack
+  packageVersion: 1.0.1
+  assetPath: Assets/VisualX_Studio/Sci-Fi_Loading_Screen_Effects_Pack_vol.1/VFX/Audio/loading_08.wav
+  uploadId: 640224

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 048bdd1758c4da845a19b3df801365e1
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 112000000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 301943
+  packageName: Sci-Fi Space Cruiser ( with Interior)
+  packageVersion: 1.0
+  assetPath: Assets/Space cruiser/lighting/LightingData.asset
+  uploadId: 724725

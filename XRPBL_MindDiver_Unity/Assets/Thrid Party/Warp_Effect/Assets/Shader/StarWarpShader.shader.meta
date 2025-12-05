@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: a533a1ecee4a0e84f80528f9c664133c
+timeCreated: 1502228301
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 112270
+  packageName: Warp Effect
+  packageVersion: 1.6.1
+  assetPath: Assets/Warp_Effect/Assets/Shader/StarWarpShader.shader
+  uploadId: 314686

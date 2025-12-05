@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 78dd70452b31fee4fa5956d6bf9a8a5a
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 301943
+  packageName: Sci-Fi Space Cruiser ( with Interior)
+  packageVersion: 1.0
+  assetPath: Assets/Space cruiser/Materials/HDRP/metallic.mat
+  uploadId: 724725

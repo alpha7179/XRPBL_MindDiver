@@ -43,6 +43,10 @@ public class IntroUIManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI VideoText;
     // Video 볼륨 슬라이더
     [SerializeField] private Slider VideoSlider;
+    // Nar 볼륨 텍스트
+    [SerializeField] private TextMeshProUGUI NARText;
+    // Nar 볼륨 슬라이더
+    [SerializeField] private Slider NARSlider;
 
     [Header("Debug Settings")]
     // 디버그 로그 출력 여부
@@ -61,6 +65,8 @@ public class IntroUIManager : MonoBehaviour
     private int SFXValue;
     // 현재 Video 볼륨 값
     private int videoValue;
+    // 현재 NAR 볼륨 값
+    private int NARValue;
     #endregion
 
     #region Unity Lifecycle
@@ -89,6 +95,13 @@ public class IntroUIManager : MonoBehaviour
         VideoSlider.wholeNumbers = true;
 
         UpdateVideoVolume(DataManager.Instance.GetVideoVolume());
+
+        // NAR 슬라이더 설정 및 이벤트 리스너 등록
+        NARSlider.minValue = 0;
+        NARSlider.maxValue = 100;
+        NARSlider.wholeNumbers = true;
+
+        UpdateVideoVolume(DataManager.Instance.GetNARVolume());
 
         // 하위 패널 비활성화 초기화
         if (placePanel) placePanel.SetActive(false);
@@ -228,6 +241,15 @@ public class IntroUIManager : MonoBehaviour
 
         OnVideoSliderValueChanged(videoValue);
     }
+
+    public void UpdateNARVolume(int value)
+    {
+        NARValue = value;
+        NARSlider.value = videoValue;
+        NARSlider.onValueChanged.AddListener(OnNARSliderValueChanged);
+
+        OnNARSliderValueChanged(NARValue);
+    }
     #endregion
 
     #region Slider Event Handlers
@@ -259,6 +281,16 @@ public class IntroUIManager : MonoBehaviour
         videoValue = Mathf.RoundToInt(value);
         if (VideoText != null) VideoText.text = videoValue.ToString();
         if (DataManager.Instance != null) DataManager.Instance.SetVideoVolume(videoValue);
+    }
+
+    /*
+     * NAR 슬라이더 값 변경 시 텍스트 갱신 및 내부 값 저장
+     */
+    private void OnNARSliderValueChanged(float value)
+    {
+        NARValue = Mathf.RoundToInt(value);
+        if (NARText != null) NARText.text = NARValue.ToString();
+        if (DataManager.Instance != null) DataManager.Instance.SetNARVolume(NARValue);
     }
     #endregion
 

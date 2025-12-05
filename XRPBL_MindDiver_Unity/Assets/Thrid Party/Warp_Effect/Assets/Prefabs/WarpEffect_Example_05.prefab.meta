@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: f75fe27054a86154ab43dd3d24d61c5a
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 112270
+  packageName: Warp Effect
+  packageVersion: 1.6.1
+  assetPath: Assets/Warp_Effect/Assets/Prefabs/WarpEffect_Example_05.prefab
+  uploadId: 314686

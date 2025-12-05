@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 8e11669213bdadb44bcb4a2ffb141a54
+timeCreated: 1521377617
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 112270
+  packageName: Warp Effect
+  packageVersion: 1.6.1
+  assetPath: Assets/Warp_Effect/Assets/Models/Materials/No Name.mat
+  uploadId: 314686

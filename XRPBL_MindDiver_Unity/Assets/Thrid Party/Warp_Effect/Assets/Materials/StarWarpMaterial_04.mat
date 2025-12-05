@@ -1,0 +1,210 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: StarWarpMaterial_04
+  m_Shader: {fileID: 4800000, guid: a533a1ecee4a0e84f80528f9c664133c, type: 3}
+  m_ShaderKeywords: RENDER_STAR_LAYER_1 RENDER_STAR_LAYER_2 _RENDERSTARLAYER1_ON _RENDERSTARLAYER2_ON
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BumpMap:
+        m_Texture: {fileID: 2800000, guid: 0fec4a3f621f20e4a992203a198bd167, type: 3}
+        m_Scale: {x: 0.05, y: 0.05}
+        m_Offset: {x: 0, y: 0}
+    - _CloudTex:
+        m_Texture: {fileID: 2800000, guid: f2127ac960d01f444b8547eb0432ed71, type: 3}
+        m_Scale: {x: 5, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailAlbedoMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailNormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DistortTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 0, y: 0}
+        m_Offset: {x: 0, y: 0}
+    - _DistortionBumpMap:
+        m_Texture: {fileID: 2800000, guid: 892995f5841545249abe988fa07169ba, type: 3}
+        m_Scale: {x: 0.05, y: 0.05}
+        m_Offset: {x: 0, y: 0}
+    - _EmissionMap:
+        m_Texture: {fileID: 2800000, guid: 982eb24abf7f22e49a1854b731ab82ab, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EmissionMap_01:
+        m_Texture: {fileID: 2800000, guid: ea4ef75073555e247a95112110e553c9, type: 3}
+        m_Scale: {x: 8, y: 5.27}
+        m_Offset: {x: 0, y: 0}
+    - _EmissionMap_02:
+        m_Texture: {fileID: 2800000, guid: 780104bdf697d47459ca9fb4912612fa, type: 3}
+        m_Scale: {x: 5, y: 0.88}
+        m_Offset: {x: 0, y: 0}
+    - _EmissionTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: a3aa66b74fad5874d99007794d7588a8, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex1:
+        m_Texture: {fileID: 2800000, guid: 753882fc3049507438e854146d7a418f, type: 3}
+        m_Scale: {x: 2, y: 3.95}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex2:
+        m_Texture: {fileID: 2800000, guid: 0fc68c881a7b53b488cb67455821d0ae, type: 3}
+        m_Scale: {x: 1, y: 0.69}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex2Normal:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex3:
+        m_Texture: {fileID: 2800000, guid: d8a8a764c7a1ed94aa75d6a8efda0e0c, type: 3}
+        m_Scale: {x: 1, y: 3.22}
+        m_Offset: {x: 1, y: 0}
+    - _MainTex3Normal:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex4:
+        m_Texture: {fileID: 2800000, guid: 0e320cbd0f6bf7248b6561790c40da48, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex4Normal:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetallicGlossMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NoiseTex:
+        m_Texture: {fileID: 2800000, guid: d4c42a326a5983d449f1377d1d54a880, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OcclusionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ParallaxMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _StarColorLayer1:
+        m_Texture: {fileID: 2800000, guid: d4c42a326a5983d449f1377d1d54a880, type: 3}
+        m_Scale: {x: 2, y: 2}
+        m_Offset: {x: 0, y: 0}
+    - _StarColorLayer2:
+        m_Texture: {fileID: 2800000, guid: 07e9edad111c20648908ff86ba3e1c87, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _StarTex:
+        m_Texture: {fileID: 2800000, guid: f2127ac960d01f444b8547eb0432ed71, type: 3}
+        m_Scale: {x: 8, y: 0.5}
+        m_Offset: {x: 0, y: 0}
+    - _StarTexLayer1:
+        m_Texture: {fileID: 2800000, guid: 7cd131d84b8bd564db15ee2953feba85, type: 3}
+        m_Scale: {x: 6.345435, y: 0.062564}
+        m_Offset: {x: 0, y: 0}
+    - _StarTexLayer2:
+        m_Texture: {fileID: 2800000, guid: 7cd131d84b8bd564db15ee2953feba85, type: 3}
+        m_Scale: {x: 8, y: 0.3}
+        m_Offset: {x: 0, y: 0}
+    - _TestTex:
+        m_Texture: {fileID: 2800000, guid: f2127ac960d01f444b8547eb0432ed71, type: 3}
+        m_Scale: {x: 3, y: 0.01}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - _BackgroundDistortion: 0.05
+    - _BackgroundDistortionAmt: 0.066
+    - _BackgroundDistortionFrequence: 0.04
+    - _BackgroundDistortionStrength: 50
+    - _BumpAmt: 15
+    - _BumpScale: 1
+    - _Cutoff: 0.5
+    - _DetailNormalMapScale: 1
+    - _DistortionStrength: 35
+    - _DstBlend: 0
+    - _EmissionMapDistortion: 0
+    - _EmissionMapDistortionScale: -0.2
+    - _EmissionMapDistortionSpeedY: 3
+    - _EmissionMapRotationSpeed1: -4.1
+    - _EmissionMapRotationSpeed2: 9.4
+    - _EmissionMapRotationSpeed_01: -5.9
+    - _EmissionMapRotationSpeed_02: 10.1
+    - _FinalWarpSpeed: 0
+    - _GlossMapScale: 1
+    - _Glossiness: 0.5
+    - _GlossyReflections: 1
+    - _MainTexRotationSpeed1: -1.8
+    - _MainTexRotationSpeed2: 1
+    - _MainTexRotationSpeed3: -3.1
+    - _Metallic: 0
+    - _Mode: 0
+    - _MultiplyEmissionMaps: 0
+    - _OcclusionStrength: 1
+    - _Parallax: 0.02
+    - _RenderStarLayer1: 1
+    - _RenderStarLayer2: 1
+    - _Scale: 0.00349
+    - _SmoothnessTextureChannel: 0
+    - _SpecularHighlights: 1
+    - _SpeedX: 1
+    - _SpeedY: 1
+    - _SrcBlend: 1
+    - _StarLayer1Delay: 0
+    - _StarLayer2Delay: 0
+    - _StarLayerDelay1: 2
+    - _StarLayerDelay2: 5
+    - _StarLayerRotationSpeed1: 0.16
+    - _StarLayerRotationSpeed2: -0.1
+    - _StarSpeedFactorLayer1: 0.101
+    - _StarSpeedFactorLayer2: 0.125
+    - _StarTexLayer1Brightness: 17.3
+    - _StarTexLayer2Brightness: 12
+    - _StarsEndPos: 0.166
+    - _StarsEndPosLayer1: 0
+    - _StarsEndPosLayer2: 0
+    - _StarsStartPos: 0.247
+    - _StarsStartPosLayer1: 0.5
+    - _StarsStartPosLayer2: 0.5
+    - _TextSwitch: 0.29
+    - _TileX: 20
+    - _TileY: 20
+    - _UVSec: 0
+    - _WarpSpeed: 10
+    - _WarpSpeedAcceleration: 0.372
+    - _ZWrite: 1
+    m_Colors:
+    - _Color: {r: 0.8018868, g: 0.47281057, b: 0.7787938, a: 0.15686275}
+    - _EmissionColor: {r: 1.3695562, g: 1.1260753, b: 1.4125916, a: 1}
+    - _IntensityAndScrolling: {r: 0.02, g: 0.02, b: 1, a: 1}
+    - _MixColor: {r: 0.25952294, g: 0.6061964, b: 0.6792453, a: 1}
+    - _MixColor2: {r: 0.42647058, g: 0.8338742, b: 1, a: 1}
+    - _StarColorLayer1: {r: 0.27567622, g: 0.6725576, b: 0.99056596, a: 1}
+    - _StarColorLayer2: {r: 0.49959922, g: 0.78046834, b: 0.9716981, a: 1}

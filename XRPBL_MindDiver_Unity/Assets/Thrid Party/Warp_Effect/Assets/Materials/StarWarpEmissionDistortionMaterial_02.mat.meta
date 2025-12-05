@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: f07f85a49f4a639498d7506b2d3b4c98
+timeCreated: 1504023495
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 112270
+  packageName: Warp Effect
+  packageVersion: 1.6.1
+  assetPath: Assets/Warp_Effect/Assets/Materials/StarWarpEmissionDistortionMaterial_02.mat
+  uploadId: 314686

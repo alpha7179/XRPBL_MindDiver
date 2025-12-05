@@ -38,7 +38,7 @@ public class IngameUIManager : MonoBehaviour
     [SerializeField] public List<TextMeshProUGUI> scoreTexts;
 
     [SerializeField] public TextMeshProUGUI progressText;
-    [SerializeField] public Slider progressSlider;
+    [SerializeField] public Image progressSlider;
 
     [SerializeField] public List<TextMeshProUGUI> HPTexts;
     [SerializeField] public List<Slider> HPSliders;
@@ -132,10 +132,6 @@ public class IngameUIManager : MonoBehaviour
             DataManager.Instance.OnDeBufferAdded += HandleDeBufferAdded;
             DataManager.Instance.OnBufferAdded += HandleBufferAdded;
         }
-
-        progressSlider.minValue = 0;
-        progressSlider.maxValue = 100;
-        progressSlider.wholeNumbers = true;
 
         foreach (var sliders in HPSliders) if (sliders) sliders.minValue = 0;
         foreach (var sliders in HPSliders) if (sliders) sliders.maxValue = 100;
@@ -379,7 +375,7 @@ public class IngameUIManager : MonoBehaviour
 
     public void UpdateProgress(float value)
     {
-        if (progressSlider) { progressSlider.value = value; progressText.text = $"{((int)value)} %"; }
+        if (progressSlider) { progressSlider.fillAmount = value; progressText.text = $"{((int)value)} %"; }
     }
 
     // --- State Accessors ---

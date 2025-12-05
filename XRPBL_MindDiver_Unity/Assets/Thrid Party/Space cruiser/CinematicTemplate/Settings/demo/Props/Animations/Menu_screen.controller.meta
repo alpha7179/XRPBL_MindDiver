@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 54bb30ea4e06a8845ac2e15d257cbd45
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 301943
+  packageName: Sci-Fi Space Cruiser ( with Interior)
+  packageVersion: 1.0
+  assetPath: Assets/Space cruiser/CinematicTemplate/Settings/demo/Props/Animations/Menu_screen.controller
+  uploadId: 724725

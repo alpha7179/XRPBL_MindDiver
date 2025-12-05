@@ -1,0 +1,220 @@
+fileFormatVersion: 2
+guid: 59e8b8dd19a931b43b1d298a15fc4603
+ModelImporter:
+  serializedVersion: 22
+  fileIDToRecycleName:
+    100000: Conifer Tree 1
+    100002: Conifer Tree 2
+    100004: Conifer Tree 3
+    100006: Conifer Tree Tall 1
+    100008: Dry Ground
+    100010: Dry Ground.001
+    100012: //RootNode
+    100014: Rock 1
+    100016: Cracked Ground
+    100018: Particle Base
+    100020: Large Plot 1
+    100022: Large Plot 2
+    100024: Hill 1
+    100026: Hill 2
+    100028: Large Plot Canyon
+    100030: Ground 1
+    100032: Ground 2
+    100034: Ground 3
+    100036: Ground 4
+    100038: Ground 5
+    100040: SurfPatch.001
+    100042: Large Plot Canyon Hollow
+    400000: Conifer Tree 1
+    400002: Conifer Tree 2
+    400004: Conifer Tree 3
+    400006: Conifer Tree Tall 1
+    400008: Dry Ground
+    400010: Dry Ground.001
+    400012: //RootNode
+    400014: Rock 1
+    400016: Cracked Ground
+    400018: Particle Base
+    400020: Large Plot 1
+    400022: Large Plot 2
+    400024: Hill 1
+    400026: Hill 2
+    400028: Large Plot Canyon
+    400030: Ground 1
+    400032: Ground 2
+    400034: Ground 3
+    400036: Ground 4
+    400038: Ground 5
+    400040: SurfPatch.001
+    400042: Large Plot Canyon Hollow
+    2100000: No Name
+    2100002: Tree_
+    2100004: Trunk
+    2100006: Snow
+    2100008: Rock
+    2300000: Conifer Tree 1
+    2300002: Conifer Tree 2
+    2300004: Conifer Tree 3
+    2300006: Conifer Tree Tall 1
+    2300008: Dry Ground
+    2300010: Dry Ground.001
+    2300012: Rock 1
+    2300014: Cracked Ground
+    2300016: Particle Base
+    2300018: Large Plot 1
+    2300020: Large Plot 2
+    2300022: Hill 1
+    2300024: Hill 2
+    2300026: Large Plot Canyon
+    2300028: Ground 1
+    2300030: Ground 2
+    2300032: Ground 3
+    2300034: Ground 4
+    2300036: Ground 5
+    2300038: SurfPatch.001
+    2300040: Large Plot Canyon Hollow
+    3300000: Conifer Tree 1
+    3300002: Conifer Tree 2
+    3300004: Conifer Tree 3
+    3300006: Conifer Tree Tall 1
+    3300008: Dry Ground
+    3300010: Dry Ground.001
+    3300012: Rock 1
+    3300014: Cracked Ground
+    3300016: Particle Base
+    3300018: Large Plot 1
+    3300020: Large Plot 2
+    3300022: Hill 1
+    3300024: Hill 2
+    3300026: Large Plot Canyon
+    3300028: Ground 1
+    3300030: Ground 2
+    3300032: Ground 3
+    3300034: Ground 4
+    3300036: Ground 5
+    3300038: SurfPatch.001
+    3300040: Large Plot Canyon Hollow
+    4300000: Dry Ground.001
+    4300002: Rock 1
+    4300004: Conifer Tree Tall 1
+    4300006: Conifer Tree 2
+    4300008: Conifer Tree 3
+    4300010: Conifer Tree 1
+    4300012: Dry Ground
+    4300014: Cracked Ground
+    4300016: Particle Base
+    4300018: Large Plot 2
+    4300020: Large Plot 1
+    4300022: Hill 2
+    4300024: Hill 1
+    4300026: Large Plot Canyon
+    4300028: Ground 2
+    4300030: Ground 1
+    4300032: Ground 3
+    4300034: SurfPatch.001
+    4300036: Ground 4
+    4300038: Ground 5
+    4300040: Large Plot Canyon Hollow
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: No Name
+    second: {fileID: 2100000, guid: 8a6fe13a008dabe4485551e506f8873b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Tree_
+    second: {fileID: 2100000, guid: 2371a6d446ab8d74d8d7dce3e14649eb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Trunk
+    second: {fileID: 2100000, guid: 65e8b2da7bada3f40b9d0acfe5f914f8, type: 2}
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    motionNodeName: 
+    rigImportErrors: 
+    rigImportWarnings: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    importVisibility: 1
+    importBlendShapes: 1
+    importCameras: 1
+    importLights: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    keepQuads: 0
+    weldVertices: 1
+    preserveHierarchy: 0
+    indexFormat: 0
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 0
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 4
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    serializedVersion: 2
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    rootMotionBoneName: 
+    rootMotionBoneRotation: {x: 0, y: 0, z: 0, w: 1}
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 0
+  humanoidOversampling: 1
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 158791
+  packageName: 'Rupture: Low Poly Volcano'
+  packageVersion: 1.0
+  assetPath: Assets/Rupture - Low Poly Volcano/Contents/Meshes/Enviroment.fbx
+  uploadId: 343383
