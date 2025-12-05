@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: 8d0bf6c9084754fbfa781c5b2e5c5cd6
+timeCreated: 1470154789
+licenseType: Store
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 86544
+  packageName: Tunnel FX 2
+  packageVersion: 3.2.1
+  assetPath: Assets/TunnelFX2/Demo/Demo.cs
+  uploadId: 645307

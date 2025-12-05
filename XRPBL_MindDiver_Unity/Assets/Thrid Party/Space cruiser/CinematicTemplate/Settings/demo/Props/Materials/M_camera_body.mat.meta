@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f2b1de9eca82a444296fa5c5027716f4
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 301943
+  packageName: Sci-Fi Space Cruiser ( with Interior)
+  packageVersion: 1.0
+  assetPath: Assets/Space cruiser/CinematicTemplate/Settings/demo/Props/Materials/M_camera_body.mat
+  uploadId: 724725

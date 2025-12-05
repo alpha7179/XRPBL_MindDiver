@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 5872051a6e8aa4e3daf888950fe7dfa1
+timeCreated: 1490370222
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 86544
+  packageName: Tunnel FX 2
+  packageVersion: 3.2.1
+  assetPath: Assets/TunnelFX2/Resources/Shaders/TunnelCap.shader
+  uploadId: 645307

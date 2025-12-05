@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 8aaf931ea703b477d9a1cdf473ba1138
+timeCreated: 1490267658
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 86544
+  packageName: Tunnel FX 2
+  packageVersion: 3.2.1
+  assetPath: Assets/TunnelFX2/Resources/Shaders/TunnelFX2Alpha.shader
+  uploadId: 645307

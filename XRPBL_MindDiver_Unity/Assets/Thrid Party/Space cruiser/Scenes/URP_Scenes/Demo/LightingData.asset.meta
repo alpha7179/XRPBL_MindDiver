@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f8ce41aa6b2266b4780b86dac4a4ea16
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 112000000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 301943
+  packageName: Sci-Fi Space Cruiser ( with Interior)
+  packageVersion: 1.0
+  assetPath: Assets/Space cruiser/Scenes/URP_Scenes/Demo/LightingData.asset
+  uploadId: 724725

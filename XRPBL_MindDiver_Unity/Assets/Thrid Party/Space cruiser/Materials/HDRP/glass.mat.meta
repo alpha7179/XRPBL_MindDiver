@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f9bc51dccdb0d014da77f6853b6d77cf
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 301943
+  packageName: Sci-Fi Space Cruiser ( with Interior)
+  packageVersion: 1.0
+  assetPath: Assets/Space cruiser/Materials/HDRP/glass.mat
+  uploadId: 724725

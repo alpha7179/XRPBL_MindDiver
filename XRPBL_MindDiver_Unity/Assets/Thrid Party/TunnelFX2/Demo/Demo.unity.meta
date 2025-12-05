@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 385ad2b5e7d18497f838c54e6fb12285
+timeCreated: 1490563003
+licenseType: Store
+DefaultImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 86544
+  packageName: Tunnel FX 2
+  packageVersion: 3.2.1
+  assetPath: Assets/TunnelFX2/Demo/Demo.unity
+  uploadId: 645307

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 36d2c90ee6767f04a9999ea8fce47622
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 301943
+  packageName: Sci-Fi Space Cruiser ( with Interior)
+  packageVersion: 1.0
+  assetPath: Assets/Space cruiser/CinematicTemplate/CinematicOverlay/HUD_Material.mat
+  uploadId: 724725

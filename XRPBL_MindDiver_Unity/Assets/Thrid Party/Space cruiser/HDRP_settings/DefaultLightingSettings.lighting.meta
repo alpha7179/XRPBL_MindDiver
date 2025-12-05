@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 35741ada20b8ad54883015467df62533
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 4890085278179872738
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 301943
+  packageName: Sci-Fi Space Cruiser ( with Interior)
+  packageVersion: 1.0
+  assetPath: Assets/Space cruiser/HDRP_settings/DefaultLightingSettings.lighting
+  uploadId: 724725

@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 2b34a9e709eaac845920565f5abc5990
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 112270
+  packageName: Warp Effect
+  packageVersion: 1.6.1
+  assetPath: Assets/Warp_Effect/Assets/Prefabs/WarpEffect_Emission_Distortion_Example_01.prefab
+  uploadId: 314686

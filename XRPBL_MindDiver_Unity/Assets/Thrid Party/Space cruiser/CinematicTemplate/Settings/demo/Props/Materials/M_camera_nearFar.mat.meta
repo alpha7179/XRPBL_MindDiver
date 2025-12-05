@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: def2554dfd983644da1de2e2b038205d
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 301943
+  packageName: Sci-Fi Space Cruiser ( with Interior)
+  packageVersion: 1.0
+  assetPath: Assets/Space cruiser/CinematicTemplate/Settings/demo/Props/Materials/M_camera_nearFar.mat
+  uploadId: 724725

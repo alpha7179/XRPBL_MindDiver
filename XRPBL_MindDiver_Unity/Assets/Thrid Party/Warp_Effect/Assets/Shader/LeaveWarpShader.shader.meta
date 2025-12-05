@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: bfe3628c473373144b3289051518da53
+timeCreated: 1519230755
+licenseType: Store
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 112270
+  packageName: Warp Effect
+  packageVersion: 1.6.1
+  assetPath: Assets/Warp_Effect/Assets/Shader/LeaveWarpShader.shader
+  uploadId: 314686

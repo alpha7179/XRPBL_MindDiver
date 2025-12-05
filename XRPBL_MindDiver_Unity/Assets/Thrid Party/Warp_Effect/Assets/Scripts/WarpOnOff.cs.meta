@@ -1,0 +1,20 @@
+fileFormatVersion: 2
+guid: 7608d038e1da1594db3a6cedcf9f934e
+timeCreated: 1519226555
+licenseType: Store
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 112270
+  packageName: Warp Effect
+  packageVersion: 1.6.1
+  assetPath: Assets/Warp_Effect/Assets/Scripts/WarpOnOff.cs
+  uploadId: 314686

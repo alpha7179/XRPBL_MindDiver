@@ -1,0 +1,23 @@
+////////////////////////////////////////////////////////////////////////////////////////////
+                   VisualX_Sci-Fi Loading Screen Effects Pack vol.1
+////////////////////////////////////////////////////////////////////////////////////////////
+
+Thank you for purchasing the Sci-Fi Loading Screen Effects Pack vol.1
+
+The effects themselves use only the standard shaders
+Mobile/Particles/Alpha Blended.
+Mobile/Particlres/Additive 
+So there will be no problems with compatibility with Built-in, URP and HDRP 
+work with mobile devices 
+All effects are collected in the "Demo_scene" scene.
+
+Disclaimer: The effects are created with Particle System and need to use auxiliary scripts to work correctly in UI Canvas. There are no such scripts in this package. They are freely available on the Internet.
+
+
+This set has 10 unique effects in 5 colors. 
+And 10 unique sounds 
+
+Thanks again, and I hope our effects will be useful for your projects.
+- VisualX
+
+vvvisualxxx@gmail.com

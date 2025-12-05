@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: e58a659dc67a1a74e93299c1ea6415d1
+timeCreated: 1504023495
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 112270
+  packageName: Warp Effect
+  packageVersion: 1.6.1
+  assetPath: Assets/Warp_Effect/Assets/Materials/StarWarpMaterial_04.mat
+  uploadId: 314686

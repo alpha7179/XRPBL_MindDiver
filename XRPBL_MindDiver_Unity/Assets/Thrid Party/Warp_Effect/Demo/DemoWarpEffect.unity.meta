@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: be588fc6715495b4a8074cf3e1acca5a
+timeCreated: 1523031680
+licenseType: Store
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 112270
+  packageName: Warp Effect
+  packageVersion: 1.6.1
+  assetPath: Assets/Warp_Effect/Demo/DemoWarpEffect.unity
+  uploadId: 314686

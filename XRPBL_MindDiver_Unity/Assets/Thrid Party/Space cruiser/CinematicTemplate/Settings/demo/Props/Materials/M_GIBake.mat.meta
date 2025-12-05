@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 423061a3362ca3f4796f193803ea2af0
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 301943
+  packageName: Sci-Fi Space Cruiser ( with Interior)
+  packageVersion: 1.0
+  assetPath: Assets/Space cruiser/CinematicTemplate/Settings/demo/Props/Materials/M_GIBake.mat
+  uploadId: 724725
