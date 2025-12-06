@@ -94,6 +94,7 @@ public class GamePhaseManager : MonoBehaviour
 
         if (phase1TargetZone != null) phase1TargetZone.SetActive(false);
 
+        /*
         // Phase 2 시작
         StartPhase(Phase.Phase2);
 
@@ -101,6 +102,10 @@ public class GamePhaseManager : MonoBehaviour
 
         // Phase 3 시작
         StartPhase(Phase.Phase3);
+        */
+
+        StartPhase(Phase.Complete);
+        if (IngameUIManager.Instance) IngameUIManager.Instance.ShowOuttroUI();
     }
 
     private IEnumerator WaitForConditionOrTime(Func<bool> condition, float duration)

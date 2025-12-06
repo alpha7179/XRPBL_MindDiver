@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -29,6 +30,18 @@ public class IntroUIManager : MonoBehaviour
     [SerializeField] private GameObject settingPanel;
     // 종료/팁 패널 참조
     [SerializeField] private GameObject endPanel;
+    // 활성화 패널 경계
+    [SerializeField] private GameObject[] activePanelBorder;
+    // 활성화 패널 이름
+    [SerializeField] private GameObject[] activePanelName;
+
+    [SerializeField] private GameObject[] fadePanel;
+
+    [Header("Place 패널 구성요소")]
+    // 활성화 챕터 번호 패널
+    [SerializeField] private GameObject[] activePhaseNumPanel;
+    // 활성화 챕터 이름 패널
+    [SerializeField] private GameObject[] activePhaseNamePanel;
 
     [Header("Setting 패널 구성요소")]
     // BGM 볼륨 텍스트
@@ -48,6 +61,10 @@ public class IntroUIManager : MonoBehaviour
     // Nar 볼륨 슬라이더
     [SerializeField] private Slider NARSlider;
 
+    [Header("Animation Settings")]
+    [Tooltip("패널이 켜지고 꺼지는 페이드 시간")]
+    [SerializeField] private float panelFadeDuration = 0.5f;
+
     [Header("Debug Settings")]
     // 디버그 로그 출력 여부
     [SerializeField] private bool isDebugMode = true;
@@ -58,6 +75,10 @@ public class IntroUIManager : MonoBehaviour
     private GameObject currentTopPanel;
     // 현재 활성화된 메인(하위) 패널 추적
     private GameObject currentMainPanel;
+    private int currentActiveMainPanel;
+    // 현재 활성화된 장소 패널 추적
+    private int currentPlacePanel;
+    private string currentPhaseName = null ;
 
     // 현재 BGM 볼륨 값
     private int BGMValue;
@@ -67,6 +88,8 @@ public class IntroUIManager : MonoBehaviour
     private int videoValue;
     // 현재 NAR 볼륨 값
     private int NARValue;
+
+    private Dictionary<GameObject, Coroutine> panelCoroutines = new Dictionary<GameObject, Coroutine>();
     #endregion
 
     #region Unity Lifecycle
@@ -101,10 +124,15 @@ public class IntroUIManager : MonoBehaviour
         NARSlider.maxValue = 100;
         NARSlider.wholeNumbers = true;
 
-        UpdateVideoVolume(DataManager.Instance.GetNARVolume());
+        UpdateNARVolume(DataManager.Instance.GetNARVolume());
 
         // 하위 패널 비활성화 초기화
-        if (placePanel) placePanel.SetActive(false);
+        if (placePanel)
+        {
+            placePanel.SetActive(false);
+            foreach (var panel in activePhaseNumPanel) { if (panel) panel.SetActive(false); }
+            foreach (var panel in activePhaseNamePanel) { if (panel) panel.SetActive(false); }
+        }
         if (manualPanel) manualPanel.SetActive(false);
         if (settingPanel) settingPanel.SetActive(false);
         if (endPanel) endPanel.SetActive(false);
@@ -115,6 +143,9 @@ public class IntroUIManager : MonoBehaviour
 
         currentTopPanel = introPanel;
         currentMainPanel = null;
+        currentActiveMainPanel = -1;
+        currentPlacePanel = -1;
+        currentPhaseName = null;
     }
     #endregion
 
@@ -126,23 +157,62 @@ public class IntroUIManager : MonoBehaviour
     {
         if (currentTopPanel == panelToActivate) return;
 
-        if (currentTopPanel != null) currentTopPanel.SetActive(false);
+        if (currentTopPanel != null)
+        {
+            //currentTopPanel.SetActive(false);
+            foreach (var panel in fadePanel) { if (panel) FadePanel(panel, true); }
+        }
 
-        panelToActivate.SetActive(true);
+        FadePanel(panelToActivate,true);
         currentTopPanel = panelToActivate;
     }
 
     /*
      * 메인 메뉴 내부의 하위 패널(Place, Manual 등) 전환 수행
      */
-    private void SwitchMainPanel(GameObject panelToActivate)
+    private void SwitchMainPanel(GameObject panelToActivate, int panelNumToActivate = -1)
     {
         if (currentMainPanel == panelToActivate) return;
 
-        if (currentMainPanel != null) currentMainPanel.SetActive(false);
+        if (panelToActivate == placePanel)
+        {
+            foreach (var panel in activePhaseNumPanel) { if (panel) panel.SetActive(false); }
+            foreach (var panel in activePhaseNamePanel) { if (panel) panel.SetActive(false); }
+            currentPlacePanel = -1;
+            currentPhaseName = null;
+        }
+
+        if (currentMainPanel != null && activePanelBorder != null && activePanelName != null)
+        {
+            currentMainPanel.SetActive(false);
+            activePanelBorder[currentActiveMainPanel].SetActive(false);
+            activePanelName[currentActiveMainPanel].SetActive(false);
+        }
 
         panelToActivate.SetActive(true);
+        activePanelBorder[panelNumToActivate].SetActive(true);
+        activePanelName[panelNumToActivate].SetActive(true);
         currentMainPanel = panelToActivate;
+        currentActiveMainPanel = panelNumToActivate;
+
+    }
+
+    /*
+     * Place 메뉴 전환 수행
+     */
+    private void SwitchPlacePanel(int panelToActivate)
+    {
+        if (currentPlacePanel == panelToActivate) return;
+
+        if (activePhaseNumPanel != null && activePhaseNamePanel != null && currentPlacePanel != -1)
+        {
+            activePhaseNumPanel[currentPlacePanel].SetActive(false);
+            activePhaseNamePanel[currentPlacePanel].SetActive(false);
+        }
+
+        activePhaseNumPanel[panelToActivate].SetActive(true);
+        activePhaseNamePanel[panelToActivate].SetActive(true);
+        currentPlacePanel = panelToActivate;
     }
     #endregion
 
@@ -156,7 +226,7 @@ public class IntroUIManager : MonoBehaviour
         SwitchTopPanel(choicePanel);
 
         // 메인 메뉴 진입 시 기본 하위 패널 설정
-        SwitchMainPanel(placePanel);
+        SwitchMainPanel(placePanel, 0);
     }
 
     /*
@@ -165,7 +235,7 @@ public class IntroUIManager : MonoBehaviour
     public void OnClickPlaceButton()
     {
         Log("PlaceButton Clicked");
-        SwitchMainPanel(placePanel);
+        SwitchMainPanel(placePanel, 0);
     }
 
     /*
@@ -174,7 +244,7 @@ public class IntroUIManager : MonoBehaviour
     public void OnClickManualButton()
     {
         Log("ManualButton Clicked");
-        SwitchMainPanel(manualPanel);
+        SwitchMainPanel(manualPanel, 1);
     }
 
     /*
@@ -183,7 +253,7 @@ public class IntroUIManager : MonoBehaviour
     public void OnClickSettingButton()
     {
         Log("SettingButton Clicked");
-        SwitchMainPanel(settingPanel);
+        SwitchMainPanel(settingPanel, 2);
     }
 
     /*
@@ -192,7 +262,26 @@ public class IntroUIManager : MonoBehaviour
     public void OnClickEndButton()
     {
         Log("EndButton Clicked");
-        SwitchMainPanel(endPanel);
+        SwitchMainPanel(endPanel, 3);
+    }
+
+    public void OnClickPhase1Button()
+    {
+        Log("Phase1Button Clicked");
+        currentPhaseName = "Phase1";
+        SwitchPlacePanel(0);
+    }
+    public void OnClickPhase2Button()
+    {
+        Log("Phase2Button Clicked");
+        currentPhaseName = "Phase2";
+        SwitchPlacePanel(1);
+    }
+    public void OnClickPhase3Button()
+    {
+        Log("Phase3Button Clicked");
+        currentPhaseName = "Phase3";
+        SwitchPlacePanel(2);
     }
 
     /*
@@ -209,6 +298,8 @@ public class IntroUIManager : MonoBehaviour
      */
     public void OnClickPlayButton()
     {
+        if (currentPhaseName != "Phase1") return;
+
         Log("체험을 시작합니다.");
 
         // GameManager를 통한 씬 상태 전환
@@ -245,7 +336,7 @@ public class IntroUIManager : MonoBehaviour
     public void UpdateNARVolume(int value)
     {
         NARValue = value;
-        NARSlider.value = videoValue;
+        NARSlider.value = NARValue;
         NARSlider.onValueChanged.AddListener(OnNARSliderValueChanged);
 
         OnNARSliderValueChanged(NARValue);
@@ -293,6 +384,44 @@ public class IntroUIManager : MonoBehaviour
         if (DataManager.Instance != null) DataManager.Instance.SetNARVolume(NARValue);
     }
     #endregion
+
+    private void FadePanel(GameObject panel, bool show)
+    {
+        if (panel == null) return;
+
+        CanvasGroup cg = panel.GetComponent<CanvasGroup>();
+        if (cg == null) cg = panel.AddComponent<CanvasGroup>();
+
+        if (panelCoroutines.ContainsKey(panel) && panelCoroutines[panel] != null)
+        {
+            StopCoroutine(panelCoroutines[panel]);
+        }
+        panelCoroutines[panel] = StartCoroutine(FadePanelRoutine(panel, cg, show));
+    }
+
+    private IEnumerator FadePanelRoutine(GameObject panel, CanvasGroup cg, bool show)
+    {
+        float targetAlpha = show ? 1.0f : 0.0f;
+        float startAlpha = cg.alpha;
+        float elapsed = 0f;
+
+        if (show)
+        {
+            panel.SetActive(true);
+            cg.alpha = 0f;
+            startAlpha = 0f;
+        }
+
+        while (elapsed < panelFadeDuration)
+        {
+            elapsed += Time.deltaTime;
+            cg.alpha = Mathf.Lerp(startAlpha, targetAlpha, elapsed / panelFadeDuration);
+            yield return null;
+        }
+        cg.alpha = targetAlpha;
+
+        if (!show) panel.SetActive(false);
+    }
 
     #region Helper Methods
     /*

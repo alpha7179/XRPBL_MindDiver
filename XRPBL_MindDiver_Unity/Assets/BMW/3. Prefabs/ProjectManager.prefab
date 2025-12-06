@@ -63,16 +63,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   currentVideoType: 0
+  BGMVolume: 0
+  SFXVolume: 0
+  videoVolume: 0
+  NARVolume: 0
+  currentLangType: 0
+  progress: 0
   teamScore: 0
+  shipHealth: 0
+  maxShipHealth: 100
   shipShield: 0
   maxShipShield: 100
   bufferCharge: 0
   debufferCharge: 0
   maxCharge: 10
-  selectedCharacterID: 0
+  bullet: 0
+  maxBullet: 9999
   totalPlayTime: 0
   totalEnemiesKilled: 0
   totalDamageTaken: 0
+  isDebugMode: 1
 --- !u!114 &1648014120842487201
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -88,9 +98,12 @@ MonoBehaviour:
   bgmSource: {fileID: 0}
   sfxSource: {fileID: 0}
   bgm_MainMenu: {fileID: 0}
+  bgm_CharacterSelect: {fileID: 0}
+  bgm_PrePhase: {fileID: 0}
   bgm_Phase1: {fileID: 0}
   bgm_Phase2: {fileID: 0}
-  bgm_Boss: {fileID: 0}
+  bgm_Phase3: {fileID: 0}
+  bgm_Result: {fileID: 0}
   sfx_Touch: {fileID: 0}
   sfx_Explosion: {fileID: 0}
   sfx_ShieldHit: {fileID: 0}
