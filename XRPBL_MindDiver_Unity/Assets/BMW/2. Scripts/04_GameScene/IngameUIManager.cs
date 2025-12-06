@@ -30,6 +30,7 @@ public class IngameUIManager : MonoBehaviour
     [SerializeField] private List<GameObject> instructionPanels;
     [SerializeField] private List<GameObject> manualPanels;
     [SerializeField] private List<GameObject> pausePanels;
+    [SerializeField] private List<GameObject> blackoutPanels;
     [SerializeField] private List<GameObject> takenDamagePanels;
 
     [Header("Panels UI Elements (Multi-Screen Support)")]
@@ -209,6 +210,16 @@ public class IngameUIManager : MonoBehaviour
         if (isPaused) OpenPausePanel();
         else ClosePausePanel();
     }
+
+    public void ShowOuttroUI()
+    {
+        if (OuttroUIManager.Instance)
+        {
+            OuttroUIManager.Instance.resultPanel.SetActive(true);
+            foreach (var Panel in blackoutPanels) { if (Panel) Panel.SetActive(true); }
+            //StartCoroutine(OuttroUIManager.Instance.InitializeRoutine());
+        }
+    }
     #endregion
 
     #region Vignette Logic
@@ -233,24 +244,39 @@ public class IngameUIManager : MonoBehaviour
         }
         else
         {
-            float hpRatio = (maxShield > 0) ? (float)currentShield / maxShield : 0;
-            if (hpRatio < 1.0f)
+            // Health를 기준으로 비율 계산
+            float healthRatio = (maxHealth > 0) ? (float)currentHealth / maxHealth : 0f;
+
+            // 50% (0.5) 이하일 때만 작동
+            float damageThreshold = 0.5f;
+
+            if (healthRatio <= damageThreshold)
             {
                 targetColor = damageColor;
-                float dangerLevel = 1.0f - hpRatio;
+
+                // [중요] 0.5 ~ 0.0 사이의 체력 비율을 0.0 ~ 1.0 (위험도)로 변환
+                // healthRatio가 0.5면 dangerLevel은 0 (효과 없음)
+                // healthRatio가 0.0이면 dangerLevel은 1 (최대 효과)
+                float dangerLevel = 1.0f - (healthRatio / damageThreshold);
+
+                // 위험도에 따라 반지름 감소 (maxRadius -> minRadius)
                 float baseRadius = Mathf.Lerp(maxRadius, minRadius, dangerLevel);
+
+                // 위험할수록 펄스 속도와 강도 증가
                 float currentPulseSpeed = Mathf.Lerp(2.0f, 15.0f, dangerLevel);
-                float pulseAmplitude = Mathf.Lerp(0.02f, 0.08f, dangerLevel);
+                float pulseAmplitude = Mathf.Lerp(0.0f, 0.08f, dangerLevel); // 50%일 땐 흔들림 없음
+
                 float pulse = Mathf.Sin(Time.time * currentPulseSpeed) * pulseAmplitude;
                 targetRadius = baseRadius + pulse;
             }
             else
             {
+                // 체력이 50% 초과라면 비네팅 효과 없음
                 targetRadius = maxRadius;
             }
         }
 
-        // 2. [변경] 모든 화면의 쉐이더에 값 적용
+        // 2. 모든 화면의 쉐이더에 값 적용
         foreach (var mat in vignetteMats)
         {
             if (mat != null)
@@ -375,7 +401,7 @@ public class IngameUIManager : MonoBehaviour
 
     public void UpdateProgress(float value)
     {
-        if (progressSlider) { progressSlider.fillAmount = value; progressText.text = $"{((int)value)} %"; }
+        if (progressSlider) { if (value >= 0 ) { progressSlider.fillAmount = value / 100; progressText.text = $"{((int)value)} %"; } }
     }
 
     // --- State Accessors ---
