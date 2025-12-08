@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Video;
 
 public class IngameUIManager : MonoBehaviour
 {
@@ -17,14 +18,10 @@ public class IngameUIManager : MonoBehaviour
     }
 
     #region Inspector Fields - HUD & Panels
-    // [변경] Canvas도 필요하다면 배열로 관리 (선택 사항)
     [Header("XR CAVE Elements")]
-    [Tooltip("Front, Left, Right 화면 순서대로 모두 넣으세요")]
     [SerializeField] private Canvas[] ingameCanvases;
 
     [Header("Panels (Multi-Screen Support)")]
-    [Tooltip("Front, Left, Right 화면 순서대로 모두 넣으세요")]
-    // [변경] 각 방향별 패널들을 모두 담을 리스트
     [SerializeField] private List<GameObject> mainPanels;
     [SerializeField] private List<GameObject> infoPanels;
     [SerializeField] private List<GameObject> instructionPanels;
@@ -33,35 +30,33 @@ public class IngameUIManager : MonoBehaviour
     [SerializeField] private List<GameObject> blackoutPanels;
     [SerializeField] private List<GameObject> takenDamagePanels;
 
-    [Header("Panels UI Elements (Multi-Screen Support)")]
-    // [변경] 단일 변수 -> 리스트로 변경하여 3개의 화면 UI를 모두 등록
-    [Tooltip("Front, Left, Right 화면 순서대로 모두 넣으세요")]
+    [Header("Panels UI Elements")]
     [SerializeField] public List<TextMeshProUGUI> scoreTexts;
-
     [SerializeField] public TextMeshProUGUI progressText;
     [SerializeField] public Image progressSlider;
-
     [SerializeField] public List<TextMeshProUGUI> HPTexts;
     [SerializeField] public List<Slider> HPSliders;
-
     [SerializeField] public List<TextMeshProUGUI> ShieldTexts;
     [SerializeField] public List<Slider> ShieldSliders;
-
     [SerializeField] public TextMeshProUGUI BulletText;
     [SerializeField] public Slider BulletSlider;
-
     [SerializeField] public TextMeshProUGUI BuffText;
     [SerializeField] public Slider BuffSlider;
-
     [SerializeField] public TextMeshProUGUI DeBuffText;
     [SerializeField] public Slider DeBuffSlider;
-
     [SerializeField] private List<GameObject> arrowPanels;
 
-    [Header("Images")]
+    [Header("Image/Video Players Settings")]
+    [SerializeField] public VideoPlayer[] videoPlayers;
+    [SerializeField] public List<GameObject> VideoPanels;
+
+    [Header("Character Images (0:Default, 1:Damage, 2:Fail, 3:Success)")]
     [SerializeField] public List<Image> CharacterFrontImage;
     [SerializeField] public List<Image> CharacterLeftImage;
     [SerializeField] public List<Image> CharacterRightImage;
+    [SerializeField] public List<VideoClip> CharacterFrontVideo;
+    [SerializeField] public List<VideoClip> CharacterLeftVideo;
+    [SerializeField] public List<VideoClip> CharacterRightVideo;
     #endregion
 
     #region Inspector Fields - Settings
@@ -76,16 +71,31 @@ public class IngameUIManager : MonoBehaviour
     private readonly int ColorProp = Shader.PropertyToID("_VignetteColor");
 
     [Header("Vignette Colors")]
+    [Tooltip("체력 데미지 시 색상 (빨강)")]
     [SerializeField] private Color damageColor = Color.red;
+    [Tooltip("쉴드 데미지 시 색상 (파랑/하늘)")]
+    [SerializeField] private Color shieldDamageColor = Color.cyan;
+    [Tooltip("버프 획득 시 색상 (노랑)")]
     [SerializeField] private Color bufferColor = Color.yellow;
 
-    [Header("Vignette Pulse Config")]
-    [SerializeField] private float maxRadius = 1;
-    [SerializeField] private float minRadius = 0f;
+    [Header("Vignette Configuration")]
+    [Tooltip("비네팅이 없는 상태의 Radius (기본 0.6)")]
+    [SerializeField] private float maxRadius = 0.6f;
+
+    [Tooltip("비네팅이 최대인 상태의 Radius (기본 -0.3)")]
+    [SerializeField] private float minRadius = -0.3f;
+
     [SerializeField] private float bufferEffectDuration = 2.0f;
     [SerializeField] private float debufferEffectDuration = 2.0f;
 
+    [Header("Damage Feedback Settings")]
+    [Tooltip("피격 시 데미지 이미지가 유지되는 시간")]
+    [SerializeField] private float damageImageDuration = 0.5f;
+    [Tooltip("피격 시 비네팅이 확 줄어드는 효과의 지속 시간")]
+    [SerializeField] private float hitVignetteDuration = 0.3f;
+
     [Header("Debug Settings")]
+    // 디버그 로그 출력 여부
     [SerializeField] private bool isDebugMode = true;
     #endregion
 
@@ -94,13 +104,19 @@ public class IngameUIManager : MonoBehaviour
     private int maxHealth;
     private int currentShield;
     private int maxShield;
+
+    // 버프/디버프 관련
     private bool isBufferEffectActive = false;
     private float bufferTimer = 0f;
     private bool isDeBufferEffectActive = false;
     private float debufferTimer = 0f;
-    private bool isDisplayPanel = false;
 
-    // 코루틴 관리를 위한 딕셔너리
+    // 피격 효과 관련
+    private bool isHitEffectActive = false;
+    private float hitEffectTimer = 0f;
+    private Coroutine characterImageResetRoutine;
+
+    private bool isDisplayPanel = false;
     private Dictionary<GameObject, Coroutine> panelCoroutines = new Dictionary<GameObject, Coroutine>();
     #endregion
 
@@ -109,16 +125,19 @@ public class IngameUIManager : MonoBehaviour
     {
         InitializePanels();
 
-        // [변경] 모든 비네팅 이미지의 머티리얼 초기화
+        // 1. 비네팅 머티리얼 초기화
         foreach (var img in vignetteImages)
         {
             if (img != null)
             {
-                Material mat = img.material; // 인스턴스화된 머티리얼 가져오기
-                mat.SetFloat(RadiusProp, maxRadius);
+                Material mat = img.material;
+                mat.SetFloat(RadiusProp, maxRadius); // 초기값 0.6
                 vignetteMats.Add(mat);
             }
         }
+
+        // 2. 캐릭터 이미지 초기화 (기본 상태: 0번)
+        SetCharacterImageIndex(0);
 
         if (DataManager.Instance != null)
         {
@@ -134,25 +153,7 @@ public class IngameUIManager : MonoBehaviour
             DataManager.Instance.OnBufferAdded += HandleBufferAdded;
         }
 
-        foreach (var sliders in HPSliders) if (sliders) sliders.minValue = 0;
-        foreach (var sliders in HPSliders) if (sliders) sliders.maxValue = 100;
-        foreach (var sliders in HPSliders) if (sliders) sliders.wholeNumbers = true;
-
-        foreach (var sliders in ShieldSliders) if (sliders) sliders.minValue = 0;
-        foreach (var sliders in ShieldSliders) if (sliders) sliders.maxValue = 100;
-        foreach (var sliders in ShieldSliders) if (sliders) sliders.wholeNumbers = true;
-
-        BulletSlider.minValue = 0;
-        BulletSlider.maxValue = 100;
-        BulletSlider.wholeNumbers = true;
-
-        BuffSlider.minValue = 0;
-        BuffSlider.maxValue = 100;
-        BuffSlider.wholeNumbers = true;
-
-        DeBuffSlider.minValue = 0;
-        DeBuffSlider.maxValue = 100;
-        DeBuffSlider.wholeNumbers = true;
+        InitializeSliders();
     }
 
     private void OnDestroy()
@@ -178,6 +179,12 @@ public class IngameUIManager : MonoBehaviour
     #region Event Handlers
     private void HandleShieldChange(int current, int max)
     {
+        // [변경] 쉴드가 감소했을 때도 피격 효과 발생
+        if (current < currentShield)
+        {
+            TriggerDamageEffect();
+        }
+
         currentShield = current;
         maxShield = max;
         UpdateShield(current);
@@ -185,6 +192,12 @@ public class IngameUIManager : MonoBehaviour
 
     private void HandleHealthChange(int current, int max)
     {
+        // 체력이 줄어들었을 때 피격 효과 발생
+        if (current < currentHealth)
+        {
+            TriggerDamageEffect();
+        }
+
         currentHealth = current;
         maxHealth = max;
         UpdateHP(current);
@@ -206,18 +219,53 @@ public class IngameUIManager : MonoBehaviour
 
     private void HandlePauseState(bool isPaused)
     {
-        // [변경] 일시정지 패널 리스트 전체 제어
         if (isPaused) OpenPausePanel();
         else ClosePausePanel();
     }
+    #endregion
 
-    public void ShowOuttroUI()
+    #region Damage & Character Logic
+    private void TriggerDamageEffect()
     {
-        if (OuttroUIManager.Instance)
+        // 1. 비네팅 피격 효과 활성화
+        isHitEffectActive = true;
+        hitEffectTimer = hitVignetteDuration;
+
+        // 2. 캐릭터 이미지 '데미지(1번)' 상태로 변경
+        SetCharacterImageIndex(1);
+
+        // 3. 기존 리셋 코루틴이 있다면 취소하고 새로 시작
+        if (characterImageResetRoutine != null) StopCoroutine(characterImageResetRoutine);
+        characterImageResetRoutine = StartCoroutine(ResetCharacterImageRoutine());
+    }
+
+    private IEnumerator ResetCharacterImageRoutine()
+    {
+        yield return new WaitForSeconds(damageImageDuration);
+
+        // 게임 오버 상태가 아니라면 기본 이미지로 복귀
+        if (currentHealth > 0)
         {
-            OuttroUIManager.Instance.resultPanel.SetActive(true);
-            foreach (var Panel in blackoutPanels) { if (Panel) Panel.SetActive(true); }
-            //StartCoroutine(OuttroUIManager.Instance.InitializeRoutine());
+            SetCharacterImageIndex(0);
+        }
+    }
+
+    public void SetCharacterImageIndex(int index)
+    {
+        UpdateCharacterList(CharacterFrontImage, index);
+        UpdateCharacterList(CharacterLeftImage, index);
+        UpdateCharacterList(CharacterRightImage, index);
+    }
+
+    private void UpdateCharacterList(List<Image> images, int targetIndex)
+    {
+        if (images == null) return;
+        for (int i = 0; i < images.Count; i++)
+        {
+            if (images[i] != null)
+            {
+                images[i].gameObject.SetActive(i == targetIndex);
+            }
         }
     }
     #endregion
@@ -227,10 +275,10 @@ public class IngameUIManager : MonoBehaviour
     {
         if (vignetteMats.Count == 0) return;
 
-        float targetRadius = maxRadius;
+        float targetRadius = maxRadius; // 기본 0.6
         Color targetColor = damageColor;
 
-        // 1. 상태에 따른 반지름 및 색상 계산
+        // 1. 버프 상태 (노란색)
         if (isBufferEffectActive)
         {
             bufferTimer -= Time.deltaTime;
@@ -244,39 +292,53 @@ public class IngameUIManager : MonoBehaviour
         }
         else
         {
-            // Health를 기준으로 비율 계산
+            // 기본은 데미지 색상(빨강)이지만, 피격 순간 쉴드가 있다면 파란색으로 덮어씀
+            targetColor = damageColor;
+
+            // --- A. 저체력 로직 (Continuous Warning) ---
             float healthRatio = (maxHealth > 0) ? (float)currentHealth / maxHealth : 0f;
+            float healthBasedRadius = maxRadius;
 
-            // 50% (0.5) 이하일 때만 작동
-            float damageThreshold = 0.5f;
-
-            if (healthRatio <= damageThreshold)
+            // 체력이 50% 이하일 때 경고 효과
+            if (healthRatio <= 0.5f)
             {
-                targetColor = damageColor;
+                float t = 1.0f - (healthRatio / 0.5f);
+                healthBasedRadius = Mathf.Lerp(maxRadius, minRadius, t);
 
-                // [중요] 0.5 ~ 0.0 사이의 체력 비율을 0.0 ~ 1.0 (위험도)로 변환
-                // healthRatio가 0.5면 dangerLevel은 0 (효과 없음)
-                // healthRatio가 0.0이면 dangerLevel은 1 (최대 효과)
-                float dangerLevel = 1.0f - (healthRatio / damageThreshold);
+                float pulseSpeed = Mathf.Lerp(2.0f, 8.0f, t);
+                float pulseAmp = Mathf.Lerp(0.0f, 0.05f, t);
+                healthBasedRadius += Mathf.Sin(Time.time * pulseSpeed) * pulseAmp;
+            }
 
-                // 위험도에 따라 반지름 감소 (maxRadius -> minRadius)
-                float baseRadius = Mathf.Lerp(maxRadius, minRadius, dangerLevel);
+            // --- B. 피격 효과 로직 (Sudden Flash) ---
+            if (isHitEffectActive)
+            {
+                // [변경] 피격 시 쉴드가 남아있다면 쉴드 컬러(파랑) 사용
+                if (currentShield > 0)
+                {
+                    targetColor = shieldDamageColor;
+                }
 
-                // 위험할수록 펄스 속도와 강도 증가
-                float currentPulseSpeed = Mathf.Lerp(2.0f, 15.0f, dangerLevel);
-                float pulseAmplitude = Mathf.Lerp(0.0f, 0.08f, dangerLevel); // 50%일 땐 흔들림 없음
-
-                float pulse = Mathf.Sin(Time.time * currentPulseSpeed) * pulseAmplitude;
-                targetRadius = baseRadius + pulse;
+                hitEffectTimer -= Time.deltaTime;
+                if (hitEffectTimer <= 0)
+                {
+                    isHitEffectActive = false;
+                    targetRadius = healthBasedRadius;
+                }
+                else
+                {
+                    // 피격 순간: 최소 반지름(-0.3)까지 갔다가 돌아옴
+                    float hitProgress = 1.0f - (hitEffectTimer / hitVignetteDuration);
+                    targetRadius = Mathf.Lerp(minRadius, healthBasedRadius, hitProgress);
+                }
             }
             else
             {
-                // 체력이 50% 초과라면 비네팅 효과 없음
-                targetRadius = maxRadius;
+                targetRadius = healthBasedRadius;
             }
         }
 
-        // 2. 모든 화면의 쉐이더에 값 적용
+        // 3. 쉐이더 적용
         foreach (var mat in vignetteMats)
         {
             if (mat != null)
@@ -288,10 +350,7 @@ public class IngameUIManager : MonoBehaviour
     }
     #endregion
 
-    #region UI Control Methods
-    /*
-     * [변경] 모든 패널 리스트 비활성화 및 초기값 설정
-     */
+    #region UI Control Methods & Utils
     private void InitializePanels()
     {
         SetPanelsActive(mainPanels, false);
@@ -299,7 +358,7 @@ public class IngameUIManager : MonoBehaviour
         SetPanelsActive(instructionPanels, false);
         SetPanelsActive(manualPanels, false);
         SetPanelsActive(pausePanels, false);
-        SetPanelsActive(takenDamagePanels, false);
+        SetPanelsActive(takenDamagePanels, true);
 
         if (DataManager.Instance != null)
         {
@@ -313,42 +372,24 @@ public class IngameUIManager : MonoBehaviour
         }
     }
 
-    // 헬퍼 함수: 리스트 내 모든 패널 활성/비활성
+    private void InitializeSliders()
+    {
+        foreach (var sliders in HPSliders) if (sliders) { sliders.minValue = 0; sliders.maxValue = 100; sliders.wholeNumbers = true; }
+        foreach (var sliders in ShieldSliders) if (sliders) { sliders.minValue = 0; sliders.maxValue = 100; sliders.wholeNumbers = true; }
+        BulletSlider.minValue = 0; BulletSlider.maxValue = 100; BulletSlider.wholeNumbers = true;
+        BuffSlider.minValue = 0; BuffSlider.maxValue = 100; BuffSlider.wholeNumbers = true;
+        DeBuffSlider.minValue = 0; DeBuffSlider.maxValue = 100; DeBuffSlider.wholeNumbers = true;
+    }
+
     private void SetPanelsActive(List<GameObject> panels, bool isActive)
     {
-        foreach (var panel in panels)
-        {
-            if (panel != null) panel.SetActive(isActive);
-        }
+        foreach (var panel in panels) if (panel != null) panel.SetActive(isActive);
     }
 
-    // --- Button Event Handlers ---
-    public void OnClickPauseButton()
-    {
-        Log("PauseButton Clicked");
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.TogglePause();
-            // HandlePauseState 이벤트에서 UI 처리를 하므로 여기선 호출 생략 가능하지만 명시적 호출
-            OpenPausePanel();
-        }
-    }
+    public void OnClickPauseButton() { if (GameManager.Instance != null) { GameManager.Instance.TogglePause(); OpenPausePanel(); } }
+    public void OnClickContinueButton() { if (GameManager.Instance != null) GameManager.Instance.TogglePause(); ClosePausePanel(); }
+    public void OnClickBackButton() { Time.timeScale = 1f; if (GameManager.Instance != null) GameManager.Instance.ChangeState(GameManager.GameState.MainMenu); }
 
-    public void OnClickContinueButton()
-    {
-        Log("ContinueButton Clicked");
-        if (GameManager.Instance != null) GameManager.Instance.TogglePause();
-        ClosePausePanel();
-    }
-
-    public void OnClickBackButton()
-    {
-        Log("BackButton Clicked");
-        Time.timeScale = 1f;
-        if (GameManager.Instance != null) GameManager.Instance.ChangeState(GameManager.GameState.MainMenu);
-    }
-
-    // --- Panel Open/Close Wrappers [변경: 리스트 전체 적용] ---
     public void OpenInstructionPanel() { FadePanels(instructionPanels, true); SetDisplayPanel(true); }
     public void CloseInstructionPanel() { FadePanels(instructionPanels, false); SetDisplayPanel(false); }
     public void OpenManualPanel() { FadePanels(manualPanels, true); SetDisplayPanel(true); }
@@ -364,72 +405,42 @@ public class IngameUIManager : MonoBehaviour
     public void OpenArrowPanel(int value) { FadePanels(arrowPanels, true, true, value); }
     public void CloseArrowPanel() { FadePanels(arrowPanels, false); }
 
-    public void UpdateScore(int value)
-    {
-        foreach (var text in scoreTexts) if (text) text.text = value.ToString();
-    }
-
-    public void UpdateHP(int value)
-    {
-        foreach (var text in HPTexts) if (text) text.text = value.ToString();
-        foreach (var slider in HPSliders) if (slider) slider.value = value;
-    }
-
-    public void UpdateShield(int value)
-    {
-        foreach (var text in ShieldTexts) if (text) text.text = value.ToString();
-        foreach (var slider in ShieldSliders) if (slider) slider.value = value;
-    }
-
-    public void UpdateBullet(int value)
-    {
-        BulletText.text = value.ToString();
-        BulletSlider.value = value;
-    }
-
-    public void UpdateBuff(int value)
-    {
-        BuffText.text = value.ToString();
-        BuffSlider.value = value;
-    }
-
-    public void UpdateDeBuff(int value)
-    {
-        DeBuffText.text = value.ToString();
-        DeBuffSlider.value = value;
-    }
-
+    public void UpdateScore(int value) { foreach (var text in scoreTexts) if (text) text.text = value.ToString(); }
+    public void UpdateHP(int value) { foreach (var text in HPTexts) if (text) text.text = value.ToString(); foreach (var slider in HPSliders) if (slider) slider.value = value; }
+    public void UpdateShield(int value) { foreach (var text in ShieldTexts) if (text) text.text = value.ToString(); foreach (var slider in ShieldSliders) if (slider) slider.value = value; }
+    public void UpdateBullet(int value) { BulletText.text = value.ToString(); BulletSlider.value = value; }
+    public void UpdateBuff(int value) { BuffText.text = value.ToString(); BuffSlider.value = value; }
+    public void UpdateDeBuff(int value) { DeBuffText.text = value.ToString(); DeBuffSlider.value = value; }
     public void UpdateProgress(float value)
     {
-        if (progressSlider) { if (value >= 0 ) { progressSlider.fillAmount = value / 100; progressText.text = $"{((int)value)} %"; } }
-    }
+        float clampedValue = Mathf.Clamp(value, 0f, 100f);
 
-    // --- State Accessors ---
+        if (progressSlider)
+        {
+            progressSlider.fillAmount = clampedValue / 100f;
+        }
+
+        if (progressText)
+        {
+            progressText.text = $"{((int)clampedValue)} %";
+        }
+    }
     public void SetDisplayPanel(bool state) { isDisplayPanel = state; }
     public bool GetDisplayPanel() { return isDisplayPanel; }
-    #endregion
 
-    #region Coroutines & Animations
-    /*
-     * [변경] 여러 패널을 동시에 페이드 처리
-     */
     private void FadePanels(List<GameObject> panels, bool show, bool onlyOne = false, int onlyOneChoice = 0)
     {
         int count = 0;
         foreach (var panel in panels)
         {
             count++;
-
             if (panel == null) continue;
             if (onlyOne) { if (onlyOneChoice != count) continue; }
 
             CanvasGroup cg = panel.GetComponent<CanvasGroup>();
             if (cg == null) cg = panel.AddComponent<CanvasGroup>();
 
-            if (panelCoroutines.ContainsKey(panel) && panelCoroutines[panel] != null)
-            {
-                StopCoroutine(panelCoroutines[panel]);
-            }
+            if (panelCoroutines.ContainsKey(panel) && panelCoroutines[panel] != null) StopCoroutine(panelCoroutines[panel]);
             panelCoroutines[panel] = StartCoroutine(FadePanelRoutine(panel, cg, show));
         }
     }
@@ -440,12 +451,7 @@ public class IngameUIManager : MonoBehaviour
         float startAlpha = cg.alpha;
         float elapsed = 0f;
 
-        if (show)
-        {
-            panel.SetActive(true);
-            cg.alpha = 0f;
-            startAlpha = 0f;
-        }
+        if (show) { panel.SetActive(true); cg.alpha = 0f; startAlpha = 0f; }
 
         while (elapsed < panelFadeDuration)
         {
@@ -453,17 +459,11 @@ public class IngameUIManager : MonoBehaviour
             cg.alpha = Mathf.Lerp(startAlpha, targetAlpha, elapsed / panelFadeDuration);
             yield return null;
         }
-
         cg.alpha = targetAlpha;
-
         if (!show) panel.SetActive(false);
     }
-    #endregion
 
-    #region Utils
-    public void Log(string message)
-    {
-        if (isDebugMode) Debug.Log(message);
-    }
+    public void Log(string message) { if (isDebugMode) Debug.Log(message); }
+    public void ShowOuttroUI() { if (OuttroUIManager.Instance) { OuttroUIManager.Instance.resultPanel.SetActive(true); foreach (var Panel in blackoutPanels) { if (Panel) Panel.SetActive(true); } } }
     #endregion
 }

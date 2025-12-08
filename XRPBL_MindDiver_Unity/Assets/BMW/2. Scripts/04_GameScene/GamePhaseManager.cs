@@ -203,19 +203,31 @@ public class GamePhaseManager : MonoBehaviour
 
     private void UpdatePhase1Progress()
     {
-        if (playerTransform == null || _totalDistance <= 0.001f) return;
+        // 타겟존이나 플레이어가 없으면 리턴
+        if (playerTransform == null || phase1TargetZone == null || _totalDistance <= 0.001f) return;
 
-        // 시작점에서 현재 플레이어 위치까지 이동한 거리 계산
-        float distanceCovered = Vector3.Distance(_startPosition, playerTransform.position);
+        /* * [기존 문제 로직] 
+         * float distanceCovered = Vector3.Distance(_startPosition, playerTransform.position);
+         * -> 시작점에서 멀어지기만 하면 뒤로 가도 진행도가 오르는 문제가 있음
+         */
 
-        // 진행률 계산 (이동 거리 / 총 거리) * 100
-        float progressPercentage = (distanceCovered / _totalDistance) * 100f;
+        // [새로운 로직] "목표 지점까지 남은 거리"를 역산
 
-        // 0 ~ 100 사이로 값 제한 (목표 지점을 지나쳐도 100을 넘지 않도록)
+        // 1. 현재 위치에서 목표 지점까지의 남은 거리 계산
+        float currentDistToTarget = Vector3.Distance(playerTransform.position, phase1TargetZone.transform.position);
+
+        // 2. (총 거리 - 남은 거리) = 목표를 향해 실제로 이동한 거리
+        // 예: 총 100m, 남은게 30m면 -> 70m 이동함
+        // 예: 총 100m, 뒤로가서 남은게 120m면 -> -20m 이동함 (Clamp로 0 처리됨)
+        float traveledTowardsTarget = _totalDistance - currentDistToTarget;
+
+        // 3. 진행률 계산
+        float progressPercentage = (traveledTowardsTarget / _totalDistance) * 100f;
+
+        // 4. 0 ~ 100 사이로 안전하게 자르기 (음수 방지 및 100 초과 방지)
         int progressInt = Mathf.RoundToInt(Mathf.Clamp(progressPercentage, 0f, 100f));
 
-        // DataManager에 값 반영 (SetProgress 사용)
-        // AddProgress는 '증감'이므로 현재 절대값을 넣기 위해 SetProgress를 사용합니다.
+        // DataManager에 값 반영
         if (DataManager.Instance != null) DataManager.Instance.SetProgress(progressInt);
     }
 
