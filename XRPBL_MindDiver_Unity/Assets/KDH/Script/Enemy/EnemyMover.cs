@@ -4,12 +4,12 @@ public class EnemyMover : MonoBehaviour
 {
     [Header("위치 설정")]
     //public Transform target; // 플레이어 Transform
-    public float minDistance = 10000f; // 플레이어로부터 최소 거리
-    public float maxDistance = 10000f; // 플레이어로부터 최대 거리
+    public float minDistance = 1800f; // 플레이어로부터 최소 거리
+    public float maxDistance = 2000f; // 플레이어로부터 최대 거리
     //public float flightHeight = 0f; // 플레이어 기준 수직 높이 오프셋
     // [수정] 고정 높이 대신 높이 범위 설정
-    public float minFlightHeight = -1800f; // 카메라를 기준으로 최소 높이
-    public float maxFlightHeight = 1600f; // 카메라를 기준으로 최대 높이
+    public float minFlightHeight = -200f; // 카메라를 기준으로 최소 높이
+    public float maxFlightHeight = 180f; // 카메라를 기준으로 최대 높이
     // 90도(오른쪽)와 270도(왼쪽)를 중심으로 허용되는 각도 범위 (예: 30이면 60~120도, 240~300도 허용)
     public float sectorAngleRange = 40f;
 
@@ -17,8 +17,12 @@ public class EnemyMover : MonoBehaviour
     public float movementSpeed = 2f; // 목표 지점으로 이동하는 속도
     public float targetChangeInterval = 5f; // 목표 지점을 변경할 주기 (초)
 
+    [Header("감지 및 상태")]
+    public float detectionRadius = 2000f; // 추적을 시작할 최대 거리 (감지 범위)
+    private bool isTracking = false; // 현재 추적 중인지 상태
+
     [Header("적 공격력")]
-    public int enemydamage = 1;
+    public int enemydamage = 5;
 
 
     // 추적 기준이 되는 카메라 (3개 중 전방 카메라 하나만 지정해도 충분합니다)
@@ -106,29 +110,64 @@ public class EnemyMover : MonoBehaviour
     {
         if (primaryCamera == null) return;
 
-        // 1. 목표 위치 갱신 타이머
+        // 감지 범위 확인
+        // 카메라 (또는 플레이어)와 오브젝트 사이의 월드 거리를 계산합니다.
+        float distanceToTarget = Vector3.Distance(transform.position, primaryCamera.position);
+
+        if (!isTracking)
+        {
+            // 아직 추적 중이 아니라면, 감지 범위에 들어왔는지 확인합니다.
+            if (distanceToTarget <= detectionRadius)
+            {
+                isTracking = true;
+                // 추적 시작 시 초기 목표 위치 설정
+                currentLocalTargetPosition = GetNewLocalTargetPosition(ScreenRight);
+                timer = targetChangeInterval;
+                Debug.Log("오브젝트가 플레이어 감지 범위에 진입했습니다. 추적 시작!");
+            }
+            else
+            {
+                // 감지 범위 밖에 있다면 아무것도 하지 않습니다. (추적 중단)
+                return;
+            }
+        }
+        else // isTracking == true (추적 중)
+        {
+            // 감지 범위를 벗어나면 추적을 중단할지 결정할 수 있습니다.
+            // (일반적으로 한번 추적을 시작하면 범위를 벗어나도 계속 추적하지만, 여기서는 벗어나면 멈추도록 구현합니다.)
+            if (distanceToTarget > detectionRadius * 1.2f) // 감지 범위보다 조금 더 멀어져야 멈추도록(여유 공간) 설정
+            {
+                isTracking = false;
+                Debug.Log("오브젝트가 감지 범위를 벗어났습니다. 추적 중단.");
+                return;
+            }
+        }
+
+        // 목표 위치 갱신 타이머
         timer -= Time.deltaTime;
         if (timer <= 0f)
         {
             // 로컬 목표 위치 갱신 (플레이어 데미지 여기에)
+            DataManager.Instance.TakeDamage(enemydamage);
+
             currentLocalTargetPosition = GetNewLocalTargetPosition(ScreenRight);
             timer = targetChangeInterval;
         }
 
-        // 2. 로컬 위치를 월드 위치로 변환
+        // 로컬 위치를 월드 위치로 변환
 
         // 오브젝트가 '카메라의 자식'인 것처럼 움직이도록 월드 위치를 계산합니다.
         // primaryCamera.TransformPoint: 로컬 좌표를 월드 좌표로 변환
         Vector3 worldTargetPosition = primaryCamera.TransformPoint(currentLocalTargetPosition);
 
-        // 3. 부드러운 이동 (Lerp)
+        // 부드러운 이동 (Lerp)
         transform.position = Vector3.Lerp(
             transform.position,
             worldTargetPosition,
             Time.deltaTime * movementSpeed
         );
 
-        // 4. 회전 (카메라 기준으로 좌/우 시야각을 유지해야 하므로, 카메라는 바라보지 않습니다.)
+        // 회전 (카메라 기준으로 좌/우 시야각을 유지해야 하므로, 카메라는 바라보지 않습니다.)
         // 오브젝트의 회전은 로컬 움직임에 맞춰 자연스럽게 따라가게 둡니다.
     }
 
