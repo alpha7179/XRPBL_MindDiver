@@ -12,8 +12,8 @@ namespace Energy
 
         [Header("위치 설정")]
         public Transform target; // 플레이어 Transform
-        public float minDistance = 1600f; // 플레이어로부터 최소 거리
-        public float maxDistance = 1800f; // 플레이어로부터 최대 거리
+        public float minDistance = 1800f; // 플레이어로부터 최소 거리
+        public float maxDistance = 2000f; // 플레이어로부터 최대 거리
         public float minFlightHeight = -200f; // 카메라를 기준으로 최소 높이
         public float maxFlightHeight = 180f; // 카메라를 기준으로 최대 높이
         public float sectorAngleRange = 40f;
