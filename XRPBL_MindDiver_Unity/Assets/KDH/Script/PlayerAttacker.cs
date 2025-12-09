@@ -1,5 +1,6 @@
-using UnityEngine;
+using Energy;
 using System.Collections.Generic; // List를 사용하기 위해 추가
+using UnityEngine;
 
 public class PlayerAttacker : MonoBehaviour
 {
@@ -29,7 +30,7 @@ public class PlayerAttacker : MonoBehaviour
 
     private void HandleClick()
     {
-        // 1. 모든 카메라를 순회하며 Raycast 검사
+        // 모든 카메라를 순회하며 Raycast 검사
         foreach (Camera cam in activeCameras)
         {
             // 카메라가 활성화되어 있지 않거나, 널(null)이면 건너뜁니다.
@@ -45,15 +46,22 @@ public class PlayerAttacker : MonoBehaviour
             // Raycast 수행: Ray가 오브젝트에 맞았는지 확인합니다.
             if (Physics.Raycast(ray, out hit, 100f))
             {
-                // 2. 충돌한 오브젝트에서 EnemyHealth 컴포넌트 찾기
+                // 충돌한 오브젝트에서 EnemyHealth 컴포넌트 찾기
                 EnemyHealth enemy = hit.transform.GetComponent<EnemyHealth>();
+                EnergyClass energy = hit.transform.GetComponent<EnergyClass>();
 
                 if (enemy != null)
                 {
                     // 적 발견 시 데미지를 줍니다.
                     enemy.TakeDamage(enemy.damagePerClick);
 
-                    // 중요한 점: 클릭이 성공했으므로, 더 이상 다른 카메라를 확인할 필요 없이 함수를 종료합니다.
+                    //클릭이 성공했으므로, 더 이상 다른 카메라를 확인할 필요 없이 함수를 종료합니다.
+                    return;
+                }
+                if (energy!= null)
+                {
+                    // 적 발견 시 데미지를 줍니다.
+                    energy.TakeDamage(energy.damagePerClick);
                     return;
                 }
             }
