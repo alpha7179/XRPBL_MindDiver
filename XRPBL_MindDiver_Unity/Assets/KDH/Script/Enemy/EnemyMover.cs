@@ -110,7 +110,7 @@ public class EnemyMover : MonoBehaviour
         timer -= Time.deltaTime;
         if (timer <= 0f)
         {
-            // 로컬 목표 위치 갱신
+            // 로컬 목표 위치 갱신 (플레이어 데미지 여기에)
             currentLocalTargetPosition = GetNewLocalTargetPosition(ScreenRight);
             timer = targetChangeInterval;
         }
