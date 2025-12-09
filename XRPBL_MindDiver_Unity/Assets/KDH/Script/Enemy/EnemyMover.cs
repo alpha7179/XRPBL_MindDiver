@@ -4,8 +4,8 @@ public class EnemyMover : MonoBehaviour
 {
     [Header("위치 설정")]
     //public Transform target; // 플레이어 Transform
-    public float minDistance = 1600f; // 플레이어로부터 최소 거리
-    public float maxDistance = 1800f; // 플레이어로부터 최대 거리
+    public float minDistance = 1800f; // 플레이어로부터 최소 거리
+    public float maxDistance = 2000f; // 플레이어로부터 최대 거리
     //public float flightHeight = 0f; // 플레이어 기준 수직 높이 오프셋
     // [수정] 고정 높이 대신 높이 범위 설정
     public float minFlightHeight = -200f; // 카메라를 기준으로 최소 높이
@@ -18,7 +18,7 @@ public class EnemyMover : MonoBehaviour
     public float targetChangeInterval = 5f; // 목표 지점을 변경할 주기 (초)
 
     [Header("감지 및 상태")]
-    public float detectionRadius = 20f; // 추적을 시작할 최대 거리 (감지 범위)
+    public float detectionRadius = 70f; // 추적을 시작할 최대 거리 (감지 범위)
     private bool isTracking = false; // 현재 추적 중인지 상태
 
     [Header("적 공격력")]
@@ -113,8 +113,10 @@ public class EnemyMover : MonoBehaviour
         // 감지 범위 확인
         // 카메라 (또는 플레이어)와 오브젝트 사이의 월드 거리를 계산합니다.
         float distanceToTarget = Vector3.Distance(transform.position, primaryCamera.position);
+        
         // 거리 확인용
-        Debug.Log("플레이어와 적 거리: " + distanceToTarget);
+        //Debug.Log("플레이어와 적 거리: " + distanceToTarget);
+
         if (!isTracking)
         {
             // 아직 추적 중이 아니라면, 감지 범위에 들어왔는지 확인합니다.
