@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -48,17 +47,36 @@ public class IngameUIManager : MonoBehaviour
     [SerializeField] public Slider DeBuffSlider;
     [SerializeField] private List<GameObject> arrowPanels;
 
-    [Header("Image/Video Players Settings")]
-    [SerializeField] public VideoPlayer[] videoPlayers;
-    [SerializeField] public List<GameObject> VideoPanels;
+    [Header("Character Display Settings")]
+    [Tooltip("체크하면 영상을 재생하고, 해제하면 이미지를 사용합니다.")]
+    [SerializeField] public bool useVideoMode = false;
 
     [Header("Character Images (0:Default, 1:Damage, 2:Fail, 3:Success)")]
     [SerializeField] public List<Image> CharacterFrontImage;
     [SerializeField] public List<Image> CharacterLeftImage;
     [SerializeField] public List<Image> CharacterRightImage;
+
+    [Header("Character Videos (0:Default, 1:Damage, 2:Fail, 3:Success)")]
     [SerializeField] public List<VideoClip> CharacterFrontVideo;
     [SerializeField] public List<VideoClip> CharacterLeftVideo;
     [SerializeField] public List<VideoClip> CharacterRightVideo;
+
+    [Header("Video Players & Screens (Required for Video Mode)")]
+    [Tooltip("전면 스크린용 비디오 플레이어")]
+    [SerializeField] public VideoPlayer frontVideoPlayer;
+    [Tooltip("좌측 스크린용 비디오 플레이어")]
+    [SerializeField] public VideoPlayer leftVideoPlayer;
+    [Tooltip("우측 스크린용 비디오 플레이어")]
+    [SerializeField] public VideoPlayer rightVideoPlayer;
+
+    [Tooltip("비디오가 출력될 RawImage (이미지 모드일 때 숨겨짐)")]
+    [SerializeField] public RawImage frontRawImage;
+    [SerializeField] public RawImage leftRawImage;
+    [SerializeField] public RawImage rightRawImage;
+
+    [Tooltip("비디오 재생 속도 (1.0 = 정배속, 2.0 = 2배속)")]
+    [Range(0.1f, 5.0f)]
+    [SerializeField] public float videoPlaybackSpeed = 1.0f; // [New] 영상 속도 조절 변수
     #endregion
 
     #region Inspector Fields - Settings
@@ -73,40 +91,27 @@ public class IngameUIManager : MonoBehaviour
     private readonly int ColorProp = Shader.PropertyToID("_VignetteColor");
 
     [Header("Vignette Colors")]
-    [Tooltip("체력 데미지 시 색상 (빨강)")]
     [SerializeField] private Color damageColor = Color.red;
-    [Tooltip("쉴드 데미지 시 색상 (파란)")]
     [SerializeField] private Color shieldDamageColor = Color.blue;
-    [Tooltip("버프 사용시 시 색상 (노랑)")]
     [SerializeField] private Color bufferColor = Color.yellow;
-    [Tooltip("디버프 사용시 색상 (보라)")]
     [SerializeField] private Color debufferColor = new Color(0.6f, 0f, 0.8f, 1f);
 
     [Header("Vignette Configuration")]
-    [Tooltip("비네팅이 없는 상태의 Radius (기본 0.6)")]
     [SerializeField] private float maxRadius = 0.6f;
-
-    [Tooltip("비네팅이 최대인 상태의 Radius (기본 -0.3)")]
     [SerializeField] private float minRadius = -0.3f;
 
     [Header("Skill Effect Settings")]
-    [Tooltip("버프 효과 지속 시간 (초)")]
     [SerializeField] private float bufferEffectDuration = 3.0f;
-    [Tooltip("디버프 효과 지속 시간 (초)")]
     [SerializeField] private float debufferEffectDuration = 5.0f;
-    [Tooltip("스킬 효과 페이드 인/아웃 시간")]
     [SerializeField] private float skillFadeDuration = 0.5f;
-    [Tooltip("스킬 발동 시 비네팅 반경 (은은한 정도, 0.6~-0.3 사이)")]
     [SerializeField] private float skillTargetRadius = 0.35f;
 
     [Header("Damage Feedback Settings")]
-    [Tooltip("피격 시 데미지 이미지가 유지되는 시간")]
+    [Tooltip("이미지 모드일 때 피격 이미지 유지 시간")]
     [SerializeField] private float damageImageDuration = 2.0f;
-    [Tooltip("피격 시 비네팅이 확 줄어드는 효과의 지속 시간")]
     [SerializeField] private float hitVignetteDuration = 2.0f;
 
     [Header("Debug Settings")]
-    // 디버그 로그 출력 여부
     [SerializeField] private bool isDebugMode = true;
     #endregion
 
@@ -117,19 +122,19 @@ public class IngameUIManager : MonoBehaviour
     private int currentShield;
     private int maxShield;
 
-    // 버프/디버프 관련
     private bool isBufferEffectActive = false;
     private float bufferTimer = 0f;
-    private float currentBufferMaxDuration = 0f; // 현재 실행중인 버프의 총 시간 저장
+    private float currentBufferMaxDuration = 0f;
 
     private bool isDeBufferEffectActive = false;
     private float debufferTimer = 0f;
-    private float currentDebufferMaxDuration = 0f; // 현재 실행중인 디버프의 총 시간 저장
+    private float currentDebufferMaxDuration = 0f;
 
-    // 피격 효과 관련
     private bool isHitEffectActive = false;
     private float hitEffectTimer = 0f;
-    private Coroutine characterImageResetRoutine;
+
+    // 코루틴 참조 변수
+    private Coroutine characterResetRoutine;
 
     private bool isDisplayPanel = false;
     private Dictionary<GameObject, Coroutine> panelCoroutines = new Dictionary<GameObject, Coroutine>();
@@ -140,19 +145,22 @@ public class IngameUIManager : MonoBehaviour
     {
         outtroUIManager = GetComponent<OuttroUIManager>();
 
-        // 1. 비네팅 머티리얼 초기화
+        // 비네팅 초기화
         foreach (var img in vignetteImages)
         {
             if (img != null)
             {
                 Material mat = img.material;
-                mat.SetFloat(RadiusProp, maxRadius); // 초기값 0.6
+                mat.SetFloat(RadiusProp, maxRadius);
                 vignetteMats.Add(mat);
             }
         }
 
-        // 2. 캐릭터 이미지 초기화 (기본 상태: 0번)
-        SetCharacterImageIndex(0);
+        // 초기 모드 설정 (이미지 vs 비디오 화면 정리)
+        InitializeCharacterDisplayMode();
+
+        // [중요] 캐릭터 초기화 (기본 상태: 0번) - 시작하자마자 기본 영상 재생
+        SetCharacterState(0);
 
         if (DataManager.Instance != null)
         {
@@ -175,8 +183,10 @@ public class IngameUIManager : MonoBehaviour
     private void OnDestroy()
     {
         if (GameManager.Instance != null)
+        {
             GameManager.Instance.OnPauseStateChanged -= HandlePauseState;
             GameManager.Instance.OnFailStateChanged -= HandleFailState;
+        }
 
         if (DataManager.Instance != null)
         {
@@ -196,10 +206,7 @@ public class IngameUIManager : MonoBehaviour
     #region Event Handlers
     private void HandleShieldChange(int current, int max)
     {
-        if (current < currentShield)
-        {
-            TriggerDamageEffect();
-        }
+        if (current < currentShield) TriggerDamageEffect();
         currentShield = current;
         maxShield = max;
         UpdateShield(current);
@@ -207,10 +214,7 @@ public class IngameUIManager : MonoBehaviour
 
     private void HandleHealthChange(int current, int max)
     {
-        if (current < currentHealth)
-        {
-            TriggerDamageEffect();
-        }
+        if (current < currentHealth) TriggerDamageEffect();
         currentHealth = current;
         maxHealth = max;
         UpdateHP(current);
@@ -218,27 +222,19 @@ public class IngameUIManager : MonoBehaviour
 
     private void HandleBufferAdded()
     {
-        // 버프: 3초 (Inspector 설정값 사용)
         currentBufferMaxDuration = bufferEffectDuration;
         bufferTimer = currentBufferMaxDuration;
         isBufferEffectActive = true;
-
-        // 디버프 효과가 있다면 덮어쓰거나 우선순위 결정 (여기선 최근 발동 우선)
         isDeBufferEffectActive = false;
-
         UpdateBuff(DataManager.Instance.GetBuffer());
     }
 
     private void HandleDeBufferAdded()
     {
-        // 디버프: 스킬 지속 시간 (Inspector 설정값 혹은 변수 사용)
         currentDebufferMaxDuration = debufferEffectDuration;
         debufferTimer = currentDebufferMaxDuration;
         isDeBufferEffectActive = true;
-
-        // 버프 효과가 있다면 끔
         isBufferEffectActive = false;
-
         UpdateDeBuff(DataManager.Instance.GetDeBuffer());
     }
 
@@ -246,44 +242,89 @@ public class IngameUIManager : MonoBehaviour
     {
         if (isPaused) OpenPausePanel();
         else ClosePausePanel();
+
+        // 비디오 일시정지 처리
+        if (useVideoMode)
+        {
+            if (isPaused) PauseAllVideos();
+            else ResumeAllVideos();
+        }
     }
 
     private void HandleFailState(bool isFailed)
     {
-        if (isFailed) OpenFailPanel();
+        if (isFailed)
+        {
+            OpenFailPanel();
+            SetCharacterState(2); // 실패 상태 (영상/이미지)
+        }
         else CloseFailPanel();
     }
     #endregion
 
-    #region Damage & Character Logic
+    #region Character Logic (Image & Video)
+
+    // 모드에 따라 UI 오브젝트 활성/비활성 초기화
+    private void InitializeCharacterDisplayMode()
+    {
+        // 비디오 모드라면 RawImage를 켜고, Image 리스트의 모든 오브젝트를 끔
+        if (useVideoMode)
+        {
+            if (frontRawImage) frontRawImage.gameObject.SetActive(true);
+            if (leftRawImage) leftRawImage.gameObject.SetActive(true);
+            if (rightRawImage) rightRawImage.gameObject.SetActive(true);
+
+            HideAllCharacterImages();
+        }
+        else // 이미지 모드라면 RawImage를 끄고 로직 시작
+        {
+            if (frontRawImage) frontRawImage.gameObject.SetActive(false);
+            if (leftRawImage) leftRawImage.gameObject.SetActive(false);
+            if (rightRawImage) rightRawImage.gameObject.SetActive(false);
+        }
+    }
+
+    // 데미지 효과 발동 (공통 진입점)
     private void TriggerDamageEffect()
     {
         isHitEffectActive = true;
         hitEffectTimer = hitVignetteDuration;
 
-        SetCharacterImageIndex(1);
-
-        if (characterImageResetRoutine != null) StopCoroutine(characterImageResetRoutine);
-        characterImageResetRoutine = StartCoroutine(ResetCharacterImageRoutine());
+        // 피격 상태(Index 1)로 변경
+        SetCharacterState(1);
     }
 
-    private IEnumerator ResetCharacterImageRoutine()
+    // 캐릭터 상태 변경 통합 함수
+    public void SetCharacterState(int index)
     {
-        yield return new WaitForSeconds(damageImageDuration);
-        if (currentHealth > 0)
+        // 기존 코루틴이 있다면 중지 (피격 대기 중 상태 변경 시)
+        if (characterResetRoutine != null) StopCoroutine(characterResetRoutine);
+
+        if (useVideoMode)
         {
-            SetCharacterImageIndex(0);
+            UpdateCharacterVideo(index);
+        }
+        else
+        {
+            UpdateCharacterImage(index);
         }
     }
 
-    public void SetCharacterImageIndex(int index)
+    // [이미지 모드] 처리 로직
+    private void UpdateCharacterImage(int index)
     {
-        UpdateCharacterList(CharacterFrontImage, index);
-        UpdateCharacterList(CharacterLeftImage, index);
-        UpdateCharacterList(CharacterRightImage, index);
+        UpdateImageList(CharacterFrontImage, index);
+        UpdateImageList(CharacterLeftImage, index);
+        UpdateImageList(CharacterRightImage, index);
+
+        // 데미지(1번)인 경우 일정 시간 후 복귀
+        if (index == 1)
+        {
+            characterResetRoutine = StartCoroutine(ResetCharacterStateRoutine(damageImageDuration));
+        }
     }
 
-    private void UpdateCharacterList(List<Image> images, int targetIndex)
+    private void UpdateImageList(List<Image> images, int targetIndex)
     {
         if (images == null) return;
         for (int i = 0; i < images.Count; i++)
@@ -291,6 +332,80 @@ public class IngameUIManager : MonoBehaviour
             if (images[i] != null) images[i].gameObject.SetActive(i == targetIndex);
         }
     }
+
+    private void HideAllCharacterImages()
+    {
+        foreach (var img in CharacterFrontImage) if (img) img.gameObject.SetActive(false);
+        foreach (var img in CharacterLeftImage) if (img) img.gameObject.SetActive(false);
+        foreach (var img in CharacterRightImage) if (img) img.gameObject.SetActive(false);
+    }
+
+    // [비디오 모드] 처리 로직
+    private void UpdateCharacterVideo(int index)
+    {
+        // 1. 영상 클립 가져오기 (범위 체크)
+        VideoClip frontClip = (index < CharacterFrontVideo.Count) ? CharacterFrontVideo[index] : null;
+        VideoClip leftClip = (index < CharacterLeftVideo.Count) ? CharacterLeftVideo[index] : null;
+        VideoClip rightClip = (index < CharacterRightVideo.Count) ? CharacterRightVideo[index] : null;
+
+        // 2. 반복 재생 여부 결정 (1번=데미지는 반복 X, 나머지는 O)
+        bool isLooping = (index != 1);
+
+        // 3. 영상 재생
+        PlayVideo(frontVideoPlayer, frontClip, isLooping);
+        PlayVideo(leftVideoPlayer, leftClip, isLooping);
+        PlayVideo(rightVideoPlayer, rightClip, isLooping);
+
+        // 4. 데미지(1번)인 경우 영상 길이만큼 대기 후 0번(기본)으로 복귀
+        if (index == 1 && frontClip != null)
+        {
+            // 전면 영상 길이를 기준으로 대기 (셋 다 비슷하다고 가정, 속도 고려하여 시간 계산)
+            float waitTime = (float)frontClip.length / videoPlaybackSpeed;
+            characterResetRoutine = StartCoroutine(ResetCharacterStateRoutine(waitTime));
+        }
+    }
+
+    private void PlayVideo(VideoPlayer player, VideoClip clip, bool loop)
+    {
+        if (player == null || clip == null) return;
+
+        player.source = VideoSource.VideoClip;
+        player.clip = clip;
+        player.isLooping = loop;
+
+        // [New] 재생 속도 설정
+        player.playbackSpeed = videoPlaybackSpeed;
+
+        player.Play();
+    }
+
+    // 비디오 일시정지 유틸
+    private void PauseAllVideos()
+    {
+        if (frontVideoPlayer) frontVideoPlayer.Pause();
+        if (leftVideoPlayer) leftVideoPlayer.Pause();
+        if (rightVideoPlayer) rightVideoPlayer.Pause();
+    }
+    private void ResumeAllVideos()
+    {
+        if (frontVideoPlayer) frontVideoPlayer.Play();
+        if (leftVideoPlayer) leftVideoPlayer.Play();
+        if (rightVideoPlayer) rightVideoPlayer.Play();
+    }
+
+    // 상태 복귀 코루틴 (이미지/영상 공용)
+    private IEnumerator ResetCharacterStateRoutine(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        // 체력이 남아있고, 아직 데미지 효과 중이라면 기본 상태로 복귀
+        // (죽었거나 게임이 끝났으면 복귀 안 함)
+        if (currentHealth > 0 && GameManager.Instance.currentState == GameManager.GameState.GameStage)
+        {
+            SetCharacterState(0); // 0: Default
+        }
+    }
+
     #endregion
 
     #region Vignette Logic
@@ -298,98 +413,63 @@ public class IngameUIManager : MonoBehaviour
     {
         if (vignetteMats.Count == 0) return;
 
-        float targetRadius = maxRadius; // 기본 0.6 (효과 없음)
+        float targetRadius = maxRadius;
         Color targetColor = damageColor;
 
-        // 우선순위 1: 피격 (Hit) - 가장 강렬하고 즉각적
         if (isHitEffectActive)
         {
-            // 피격 시 쉴드 유무에 따라 색상 결정
             targetColor = (currentShield > 0) ? shieldDamageColor : damageColor;
-
             hitEffectTimer -= Time.deltaTime;
-            if (hitEffectTimer <= 0)
-            {
-                isHitEffectActive = false;
-                // 피격이 끝나면 아래의 다른 상태 로직으로 넘어감
-            }
+
+            if (hitEffectTimer <= 0) isHitEffectActive = false;
             else
             {
-                // 피격 순간: 최소 반지름(-0.3)까지 갔다가 돌아옴
                 float hitProgress = 1.0f - (hitEffectTimer / hitVignetteDuration);
-                targetRadius = Mathf.Lerp(minRadius, maxRadius, hitProgress); // 강하게 조임
+                targetRadius = Mathf.Lerp(minRadius, maxRadius, hitProgress);
             }
         }
-        // 우선순위 2: 버프 (Buff) - 노란색, 은은하게
         else if (isBufferEffectActive)
         {
             bufferTimer -= Time.deltaTime;
-
-            if (bufferTimer <= 0)
-            {
-                isBufferEffectActive = false;
-            }
+            if (bufferTimer <= 0) isBufferEffectActive = false;
             else
             {
                 targetColor = bufferColor;
-
-                // 은은하게 페이드 인/아웃 계산
                 float intensity = CalculateFadeIntensity(bufferTimer, currentBufferMaxDuration);
-
-                // radius: maxRadius(0.6) -> skillTargetRadius(0.35) -> maxRadius(0.6)
                 targetRadius = Mathf.Lerp(maxRadius, skillTargetRadius, intensity);
-
-                // 알파값도 조절하여 더 부드럽게 (Color 자체의 투명도 조절)
                 targetColor.a = intensity;
             }
         }
-        // 우선순위 3: 디버프 (DeBuff) - 보라색, 은은하게
         else if (isDeBufferEffectActive)
         {
             debufferTimer -= Time.deltaTime;
-
-            if (debufferTimer <= 0)
-            {
-                isDeBufferEffectActive = false;
-            }
+            if (debufferTimer <= 0) isDeBufferEffectActive = false;
             else
             {
                 targetColor = debufferColor;
-
-                // 은은하게 페이드 인/아웃 계산
                 float intensity = CalculateFadeIntensity(debufferTimer, currentDebufferMaxDuration);
-
-                // radius: maxRadius(0.6) -> skillTargetRadius(0.35) -> maxRadius(0.6)
                 targetRadius = Mathf.Lerp(maxRadius, skillTargetRadius, intensity);
-
                 targetColor.a = intensity;
             }
         }
-        // 우선순위 4: 저체력 경고 (Low Health)
         else
         {
             float healthRatio = (maxHealth > 0) ? (float)currentHealth / maxHealth : 0f;
-
-            // 체력이 50% 이하일 때 경고 효과
             if (healthRatio <= 0.5f)
             {
                 targetColor = damageColor;
-
                 float t = 1.0f - (healthRatio / 0.5f);
                 float healthBasedRadius = Mathf.Lerp(maxRadius, minRadius, t);
-
                 float pulseSpeed = Mathf.Lerp(2.0f, 8.0f, t);
                 float pulseAmp = Mathf.Lerp(0.0f, 0.05f, t);
                 targetRadius = healthBasedRadius + Mathf.Sin(Time.time * pulseSpeed) * pulseAmp;
             }
             else
             {
-                // 평상시
                 targetRadius = maxRadius;
             }
         }
 
-        // 쉐이더 적용
         foreach (var mat in vignetteMats)
         {
             if (mat != null)
@@ -400,36 +480,19 @@ public class IngameUIManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 남은 시간과 전체 시간을 기반으로 페이드 인/아웃 강도(0~1)를 반환합니다.
-    /// </summary>
     private float CalculateFadeIntensity(float currentTimer, float maxDuration)
     {
         float timeElapsed = maxDuration - currentTimer;
         float intensity = 1.0f;
 
-        // 페이드 인 (시작 부분)
-        if (timeElapsed < skillFadeDuration)
-        {
-            intensity = Mathf.SmoothStep(0f, 1f, timeElapsed / skillFadeDuration);
-        }
-        // 페이드 아웃 (끝 부분)
-        else if (currentTimer < skillFadeDuration)
-        {
-            intensity = Mathf.SmoothStep(0f, 1f, currentTimer / skillFadeDuration);
-        }
-        // 유지 (중간)
-        else
-        {
-            intensity = 1.0f;
-        }
+        if (timeElapsed < skillFadeDuration) intensity = Mathf.SmoothStep(0f, 1f, timeElapsed / skillFadeDuration);
+        else if (currentTimer < skillFadeDuration) intensity = Mathf.SmoothStep(0f, 1f, currentTimer / skillFadeDuration);
 
         return intensity;
     }
     #endregion
 
-    #region UI Control Methods & Utils
-    // ... (이전 코드와 동일, 생략 없이 사용하시면 됩니다)
+    #region UI Control Methods
     public void InitializePanels()
     {
         SetPanelsActive(mainPanels, false);
@@ -438,7 +501,7 @@ public class IngameUIManager : MonoBehaviour
         SetPanelsActive(manualPanels, false);
         SetPanelsActive(pausePanels, false);
         SetPanelsActive(failPanels, false);
-        SetPanelsActive(takenDamagePanels, true); // 피격 패널 초기화
+        SetPanelsActive(takenDamagePanels, true);
 
         if (DataManager.Instance != null)
         {
@@ -542,13 +605,9 @@ public class IngameUIManager : MonoBehaviour
     public void Log(string message) { if (isDebugMode) Debug.Log(message); }
     public void ShowOuttroUI()
     {
-        // 1. OuttroUIManager가 있으면 결과창 표시 요청
         if (outtroUIManager != null)
         {
             outtroUIManager.ShowResult();
-
-            // [중요] Outtro UI 캔버스가 Ingame UI 캔버스보다 위에 그려져야 합니다.
-            // 만약 BlackoutPanel이 ResultPanel을 가린다면 아래 반복문을 주석 처리하세요.
             foreach (var Panel in blackoutPanels)
             {
                 if (Panel) Panel.SetActive(true);
@@ -558,19 +617,6 @@ public class IngameUIManager : MonoBehaviour
         {
             Debug.LogError("OuttroUIManager가 씬에 없습니다!");
         }
-    }
-
-    IEnumerator DelayRoutine(float n)
-    {
-        Debug.Log("시작");
-
-        // 3초 대기 (게임 시간이 멈추면 같이 멈춤)
-        yield return new WaitForSeconds(n);
-
-        // 만약 일시정지 상관없이 실제 시간으로 3초를 기다리려면:
-        // yield return new WaitForSecondsRealtime(3.0f);
-
-        Debug.Log($"{n}초 후 실행됨");
     }
     #endregion
 }

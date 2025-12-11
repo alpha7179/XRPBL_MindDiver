@@ -3,7 +3,7 @@ using System.Collections;
 
 /// <summary>
 /// 물리 엔진 기반(Rigidbody Physics) 플레이어 이동 클래스
-/// 기능: 로지텍 휠/페달 + 관성 주행 + 버튼 매핑(GetKeyDown 적용) + 포스 피드백 + 자동 재연결
+/// 기능: 로지텍 휠/페달 + 관성 주행 + 버튼 매핑 + 포스 피드백 + [강화된 자동 재연결]
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerMover : MonoBehaviour
@@ -34,6 +34,9 @@ public class PlayerMover : MonoBehaviour
     [Range(0, 100)][SerializeField] private int centeringSpringStrength = 50;
     [Range(0, 100)][SerializeField] private int damperStrength = 30;
 
+    [Header("UI Settings")]
+    [SerializeField] private float uiKeepTime = 2.0f;
+
     [Header("References")]
     [SerializeField] private GameObject shieldEffect;
     #endregion
@@ -47,7 +50,13 @@ public class PlayerMover : MonoBehaviour
     private bool _isWheelConnected = false;
     private LogitechGSDK.DIJOYSTATE2ENGINES _currentState;
 
+    // 버튼 상태 및 UI
     private bool[] _prevButtonStates = new bool[128];
+    private int _currentUiState = -1;
+    private float _uiTimer = 0f;
+
+    // [추가됨] 코루틴 중복 실행 방지용 변수
+    private Coroutine _initCoroutine;
 
     private OuttroUIManager outtroUIManager;
     #endregion
@@ -61,7 +70,6 @@ public class PlayerMover : MonoBehaviour
         _rb = GetComponent<Rigidbody>();
         outtroUIManager = GetComponent<OuttroUIManager>();
 
-        // 물리 설정
         _rb.useGravity = false;
         _rb.constraints = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionY;
         _rb.linearDamping = coastingDrag;
@@ -72,45 +80,85 @@ public class PlayerMover : MonoBehaviour
     {
         if (useLogitechWheel)
         {
-            StartCoroutine(InitializeLogitechSDK());
-        }
-    }
-
-    private IEnumerator InitializeLogitechSDK()
-    {
-        if (_isWheelInitialized) yield break;
-        Debug.Log("[PlayerMover] 로지텍 SDK 연결 대기 중...");
-
-        while (!_isWheelInitialized)
-        {
-            bool result = LogitechGSDK.LogiSteeringInitialize(false);
-            if (result)
-            {
-                _isWheelInitialized = true;
-                Debug.Log("<color=green>[PlayerMover] 로지텍 SDK 초기화 성공!</color>");
-                HandleForceFeedback();
-            }
-            else
-            {
-                Debug.LogWarning("[PlayerMover] SDK 연결 실패. 재시도 중...");
-                yield return new WaitForSeconds(2f);
-            }
+            StartConnectionSequence();
         }
     }
 
     private void OnApplicationFocus(bool focus)
     {
+        // 앱으로 돌아왔는데 연결이 끊겨있으면 재시도
         if (focus && useLogitechWheel && !_isWheelInitialized)
         {
-            StartCoroutine(InitializeLogitechSDK());
+            StartConnectionSequence();
         }
     }
+
+    // ▼▼▼ [핵심 수정] 안전한 연결 시작 함수 ▼▼▼
+    private void StartConnectionSequence()
+    {
+        // 이미 돌고 있는 연결 시도가 있다면 중단하고 새로 시작 (중복 방지)
+        if (_initCoroutine != null) StopCoroutine(_initCoroutine);
+        _initCoroutine = StartCoroutine(InitializeLogitechSDK());
+    }
+
+    // ▼▼▼ [핵심 수정] 강화된 초기화 코루틴 ▼▼▼
+    private IEnumerator InitializeLogitechSDK()
+    {
+        // 이미 연결된 상태면 패스
+        if (_isWheelInitialized && LogitechGSDK.LogiIsConnected(0)) yield break;
+
+        Debug.Log("[PlayerMover] 로지텍 SDK 연결 시도 중...");
+
+        while (!_isWheelInitialized)
+        {
+            // 1. 혹시 꼬여있을지 모르니 셧다운 먼저 호출 (초기화 실패 시 리셋 효과)
+            LogitechGSDK.LogiSteeringShutdown();
+
+            // 아주 잠깐 대기
+            yield return null;
+
+            // 2. 초기화 시도
+            bool initResult = LogitechGSDK.LogiSteeringInitialize(false);
+
+            // 3. 초기화가 됐다면 업데이트 한 번 돌려서 실제 연결 확인
+            bool connectedResult = false;
+            if (initResult)
+            {
+                // 업데이트를 한번 해줘야 IsConnected가 갱신되는 경우가 있음
+                LogitechGSDK.LogiUpdate();
+                connectedResult = LogitechGSDK.LogiIsConnected(0);
+            }
+
+            // 4. 최종 성공 판단
+            if (initResult && connectedResult)
+            {
+                _isWheelInitialized = true;
+                _isWheelConnected = true;
+                Debug.Log("<color=green>[PlayerMover] 로지텍 SDK 초기화 및 연결 성공!</color>");
+
+                // 성공 직후 포스 피드백 적용
+                HandleForceFeedback();
+
+                // 코루틴 변수 해제
+                _initCoroutine = null;
+                yield break; // 루프 종료
+            }
+            else
+            {
+                // 실패 시 경고 출력 후 2초 대기
+                // Debug.LogWarning은 너무 많이 뜨면 거슬리니, 연결 안될 때만 1회성으로 보거나 주석 처리
+                // Debug.LogWarning("[PlayerMover] 연결 실패. 2초 후 재시도... (G-HUB 켜져있나요?)");
+                yield return new WaitForSeconds(2f);
+            }
+        }
+    }
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     private void Update()
     {
         CheckGameOver();
 
-        // 1. SDK 업데이트 및 포스 피드백
+        // 1. SDK 업데이트 및 상태 체크
         UpdateLogitechState();
         HandleForceFeedback();
 
@@ -118,7 +166,12 @@ public class PlayerMover : MonoBehaviour
         if (!canMove)
         {
             _input = Vector2.zero;
-            // 이동은 막아도 버튼 상태 업데이트는 해야 다음 프레임에 오작동 안함
+            if (_currentUiState != -1)
+            {
+                _currentUiState = -1;
+                if (IngameUIManager.Instance != null) IngameUIManager.Instance.CloseArrowPanel();
+            }
+            _uiTimer = 0f;
             UpdatePrevButtonStates();
             return;
         }
@@ -128,7 +181,8 @@ public class PlayerMover : MonoBehaviour
         float v = GetCombinedVerticalInput();
         _input = new Vector2(h, v);
 
-        // 4. 스킬 및 버튼 입력
+        // 4. UI 및 스킬 입력
+        HandleDirectionUI_PositionBased();
         HandleSkillInput();
 
         if (Input.GetKeyDown(KeyCode.Space)) ActivateShield();
@@ -174,18 +228,28 @@ public class PlayerMover : MonoBehaviour
     {
         if (!useLogitechWheel || !_isWheelInitialized) return;
 
-        if (LogitechGSDK.LogiUpdate() && LogitechGSDK.LogiIsConnected(0))
+        // SDK 업데이트 실행
+        bool updated = LogitechGSDK.LogiUpdate();
+
+        // 연결 여부 재확인 (갑자기 USB 뽑혔을 때 대비)
+        if (updated && LogitechGSDK.LogiIsConnected(0))
         {
             _isWheelConnected = true;
             _currentState = LogitechGSDK.LogiGetStateUnity(0);
         }
         else
         {
-            _isWheelConnected = false;
+            // 연결이 끊겼다면 다시 재연결 시도 로직 트리거
+            if (_isWheelConnected) // 연결되어 있다가 끊긴 순간
+            {
+                Debug.LogError("[PlayerMover] 로지텍 휠 연결 끊김!");
+                _isWheelConnected = false;
+                _isWheelInitialized = false;
+                StartConnectionSequence(); // 재연결 시도 시작
+            }
         }
     }
 
-    // 버튼 상태 저장 함수 (Update 끝에 호출)
     private void UpdatePrevButtonStates()
     {
         if (!_isWheelConnected) return;
@@ -198,11 +262,8 @@ public class PlayerMover : MonoBehaviour
     private bool GetLogiButtonDown(int buttonIndex)
     {
         if (!_isWheelConnected) return false;
-
         bool isPressedNow = _currentState.rgbButtons[buttonIndex] == 128;
         bool wasPressedLastFrame = _prevButtonStates[buttonIndex];
-
-        // "지금 눌렀고" AND "아까는 안 눌렀었다" = 막 누른 순간
         return isPressedNow && !wasPressedLastFrame;
     }
 
@@ -248,13 +309,59 @@ public class PlayerMover : MonoBehaviour
     }
     #endregion
 
-    #region Game Logic
+    #region Game Logic & UI
+    private void HandleDirectionUI_PositionBased()
+    {
+        if (IngameUIManager.Instance == null) return;
+
+        Vector3 velocity = _rb.linearVelocity;
+        Vector3 localVel = transform.InverseTransformDirection(velocity);
+
+        float sideThreshold = 2.0f;
+        float forwardThreshold = 5.0f;
+
+        int detectedState = -1;
+
+        if (localVel.x < -sideThreshold) detectedState = 1;
+        else if (localVel.x > sideThreshold) detectedState = 2;
+        else if (localVel.z > forwardThreshold) detectedState = 0;
+
+        if (detectedState != -1)
+        {
+            if (_currentUiState != detectedState)
+            {
+                _currentUiState = detectedState;
+                IngameUIManager.Instance.OpenArrowPanel(_currentUiState);
+            }
+            _uiTimer = uiKeepTime;
+        }
+        else
+        {
+            if (_uiTimer > 0)
+            {
+                _uiTimer -= Time.deltaTime;
+            }
+            else
+            {
+                if (_currentUiState != -1)
+                {
+                    _currentUiState = -1;
+                    IngameUIManager.Instance.CloseArrowPanel();
+                }
+            }
+        }
+    }
+
     public void SetMoveAction(bool value)
     {
         canMove = value;
         if (!value)
         {
             _input = Vector2.zero;
+            if (IngameUIManager.Instance != null) IngameUIManager.Instance.CloseArrowPanel();
+            _currentUiState = -1;
+            _uiTimer = 0f;
+
             if (_rb != null)
             {
                 _rb.linearVelocity = Vector3.zero;
@@ -281,41 +388,17 @@ public class PlayerMover : MonoBehaviour
     {
         if (DataManager.Instance == null) return;
 
-        // [모든 버튼 입력을 GetLogiButtonDown으로 변경]
-
-        // 버프 (Z or 11번)
         if (Input.GetKeyDown(KeyCode.Z) || GetLogiButtonDown(11))
-        {
-            if (DataManager.Instance.GetBuffer() >= DataManager.Instance.bufferUse)
-            {
-                int cost = DataManager.Instance.bufferUse;
-                DataManager.Instance.SetBuffer(Mathf.Max(0, DataManager.Instance.GetBuffer() - cost));
-                if (IngameUIManager.Instance != null) IngameUIManager.Instance.Log("Buff Activated");
-            }
-        }
+            OnClickBuffButton();
 
-        // 디버프 (X or 10번)
         if (Input.GetKeyDown(KeyCode.X) || GetLogiButtonDown(10))
-        {
-            if (DataManager.Instance.GetDeBuffer() >= DataManager.Instance.debufferUse)
-            {
-                int cost = DataManager.Instance.debufferUse;
-                DataManager.Instance.SetDeBuffer(Mathf.Max(0, DataManager.Instance.GetDeBuffer() - cost));
-                if (IngameUIManager.Instance != null) IngameUIManager.Instance.Log("Debuff Activated");
-            }
-        }
+            OnClickDebuffButton();
 
-        // 일시정지 (C or L2/7번)
         if (Input.GetKeyDown(KeyCode.C) || GetLogiButtonDown(7))
         {
             if (IngameUIManager.Instance != null)
             {
-                // 패널이 닫혀있으면 -> 일시정지 (열기)
-                if (!IngameUIManager.Instance.GetDisplayPanel())
-                {
-                    IngameUIManager.Instance.OnClickPauseButton();
-                }
-                // 패널이 열려있으면 -> 상황에 맞게 닫기 (계속하기/홈으로 등)
+                if (!IngameUIManager.Instance.GetDisplayPanel()) IngameUIManager.Instance.OnClickPauseButton();
                 else
                 {
                     if (GameManager.Instance.IsPaused) IngameUIManager.Instance.OnClickContinueButton();
@@ -325,13 +408,32 @@ public class PlayerMover : MonoBehaviour
             }
         }
 
-        // 뒤로가기 (B or R2/6번)
         if (Input.GetKeyDown(KeyCode.B) || GetLogiButtonDown(6))
         {
             if (IngameUIManager.Instance != null && IngameUIManager.Instance.GetDisplayPanel())
             {
                 if (GameManager.Instance.IsPaused || GameManager.Instance.IsFailed) IngameUIManager.Instance.OnClickBackButton();
             }
+        }
+    }
+
+    public void OnClickBuffButton()
+    {
+        if (DataManager.Instance.GetBuffer() >= DataManager.Instance.bufferUse)
+        {
+            int cost = DataManager.Instance.bufferUse;
+            DataManager.Instance.SetBuffer(Mathf.Max(0, DataManager.Instance.GetBuffer() - cost));
+            if (IngameUIManager.Instance != null) IngameUIManager.Instance.Log("Buff Activated");
+        }
+    }
+
+    public void OnClickDebuffButton()
+    {
+        if (DataManager.Instance.GetDeBuffer() >= DataManager.Instance.debufferUse)
+        {
+            int cost = DataManager.Instance.debufferUse;
+            DataManager.Instance.SetDeBuffer(Mathf.Max(0, DataManager.Instance.GetDeBuffer() - cost));
+            if (IngameUIManager.Instance != null) IngameUIManager.Instance.Log("Debuff Activated");
         }
     }
 

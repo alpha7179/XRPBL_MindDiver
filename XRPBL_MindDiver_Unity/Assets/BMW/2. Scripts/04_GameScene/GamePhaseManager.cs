@@ -18,7 +18,7 @@ public class GamePhaseManager : MonoBehaviour
 
     [Header("Phase Settings")]
     // 1페이즈 제한 시간
-    public float phase1Duration = 80f;
+    public float phase1Duration = 1000f;
     // 2페이즈 제한 시간
     public float phase2Duration = 110f;
 
@@ -236,29 +236,29 @@ public class GamePhaseManager : MonoBehaviour
         // DataManager에 값 반영
         if (DataManager.Instance != null) DataManager.Instance.SetProgress(progressInt);
 
-        // 진행도가 99% 이상일 때 행복한 표정(3)으로 변경
+        // 진행도가 95% 이상일 때 행복한 표정(3)으로 변경
         if (progressInt >= 95)
         {
-            // 행복 상태가 아닐 때만 실행
+            // 행복 상태가 아닐 때만 실행 (중복 실행 방지)
             if (!isHappyState)
             {
                 if (IngameUIManager.Instance != null)
                 {
-                    // 3번: Success/Happy 이미지
-                    IngameUIManager.Instance.SetCharacterImageIndex(3);
+                    // [수정됨] 이미지/영상 통합 함수 호출 (3번: Success/Happy)
+                    IngameUIManager.Instance.SetCharacterState(3);
                 }
                 isHappyState = true;
             }
         }
         else
         {
-            // 99% 미만이고, 이전에 행복 상태였다면 다시 기본(0)으로 복구
+            // 95% 미만이고, 이전에 행복 상태였다면 다시 기본(0)으로 복구
             if (isHappyState)
             {
                 if (IngameUIManager.Instance != null)
                 {
-                    // 0번: Default 이미지
-                    IngameUIManager.Instance.SetCharacterImageIndex(0);
+                    // [수정됨] 이미지/영상 통합 함수 호출 (0번: Default)
+                    IngameUIManager.Instance.SetCharacterState(0);
                 }
                 isHappyState = false;
             }
