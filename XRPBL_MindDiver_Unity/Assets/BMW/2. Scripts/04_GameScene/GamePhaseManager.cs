@@ -37,6 +37,8 @@ public class GamePhaseManager : MonoBehaviour
     [Header("Debug Settings")]
     // 디버그 로그 출력 여부
     [SerializeField] private bool isDebugMode = true;
+
+    private OuttroUIManager outtroUIManager;
     #endregion
 
     #region Private Fields
@@ -56,8 +58,9 @@ public class GamePhaseManager : MonoBehaviour
     #region Unity Lifecycle
     private void Start()
     {
-        if (DataManager.Instance != null)
-            DataManager.Instance.InitializeGameData();
+        outtroUIManager = GetComponent<OuttroUIManager>();
+        if (DataManager.Instance != null) DataManager.Instance.InitializeGameData();
+        if (IngameUIManager.Instance != null) IngameUIManager.Instance.InitializePanels();
 
         StartCoroutine(GameFlowRoutine());
     }
@@ -108,7 +111,16 @@ public class GamePhaseManager : MonoBehaviour
         */
 
         StartPhase(Phase.Complete);
-        if (IngameUIManager.Instance) IngameUIManager.Instance.ShowOuttroUI();
+        if (PlayerMover.Instance != null) PlayerMover.Instance.SetMoveAction(false);
+        if (IngameUIManager.Instance != null)
+        {
+            Debug.Log("Call ShowOuttroUI via IngameUIManager");
+            IngameUIManager.Instance.ShowOuttroUI();
+        }
+        else
+        {
+            Debug.LogError("IngameUIManager Instance is null!");
+        }
     }
 
     private IEnumerator WaitForConditionOrTime(Func<bool> condition, float duration)
@@ -213,7 +225,7 @@ public class GamePhaseManager : MonoBehaviour
         float currentDistToTarget = Vector3.Distance(playerTransform.position, phase1TargetZone.transform.position);
 
         // 2. (총 거리 - 남은 거리) = 목표를 향해 실제로 이동한 거리
-        float traveledTowardsTarget = _totalDistance - currentDistToTarget + 7;
+        float traveledTowardsTarget = _totalDistance - currentDistToTarget + 10;
 
         // 3. 진행률 계산
         float progressPercentage = (traveledTowardsTarget / _totalDistance) * 100f;
@@ -225,7 +237,7 @@ public class GamePhaseManager : MonoBehaviour
         if (DataManager.Instance != null) DataManager.Instance.SetProgress(progressInt);
 
         // 진행도가 99% 이상일 때 행복한 표정(3)으로 변경
-        if (progressInt >= 99)
+        if (progressInt >= 95)
         {
             // 행복 상태가 아닐 때만 실행
             if (!isHappyState)

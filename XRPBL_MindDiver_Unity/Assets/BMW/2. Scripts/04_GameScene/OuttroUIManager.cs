@@ -5,103 +5,78 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 게임 종료 후 결과(Result) 및 요약(Summary) 화면의 UI 흐름과 연출을 관리하는 매니저입니다.
-/// <para>
-/// 1. DataManager의 데이터를 기반으로 별점을 계산하고 애니메이션(펄스)을 재생합니다.<br/>
-/// 2. 컨트롤러 입력(A버튼, 조이스틱)을 통해 페이지를 넘기거나 메인으로 이동합니다.<br/>
-/// 3. 페이드(Fade) 및 펄스(Pulse) 효과를 코루틴으로 처리하여 시각적 피드백을 제공합니다.
-/// </para>
+/// 게임 종료 후 결과(Result) 화면의 UI 흐름과 연출을 관리하는 매니저
 /// </summary>
 public class OuttroUIManager : MonoBehaviour
 {
-    #region Singleton
-    public static OuttroUIManager Instance { get; private set; }
-    #endregion
-
     #region Inspector Settings (Panels)
-
     [Header("Panels")]
     [Tooltip("게임 결과(별점)를 보여주는 패널")]
     [SerializeField] public GameObject resultPanel;
 
-    [Tooltip("게임 요약(페이지)을 보여주는 패널")]
+    [Tooltip("게임 요약(페이지)을 보여주는 패널 (현재 사용 안함)")]
     [SerializeField] private GameObject summaryPanel;
-
     #endregion
 
     #region Inspector Settings (Result UI)
-
     [Header("Result Elements")]
     [Tooltip("별점 아이콘 배열 (순서대로 1점, 2점, 3점)")]
     [SerializeField] private GameObject[] starIcons;
 
     [Tooltip("점수 텍스트 (사용하지 않을 경우 비워두세요)")]
     [SerializeField] private TextMeshProUGUI scoreText;
-
-    #endregion
-
-    #region Inspector Settings (Summary UI)
-
-    [Header("Summary Elements")]
-
     #endregion
 
     #region Inspector Settings (Animation)
-
     [Header("UI Fade & Pulse Settings")]
-    [Tooltip("패널이 켜지고 꺼지는 페이드 시간(초)")]
-    [SerializeField] private float panelFadeDuration = 0.2f;
-
-    [Tooltip("이미지(별) 페이드 시간(초)")]
+    [SerializeField] private float panelFadeDuration = 0.5f;
     [SerializeField] private float imageFadeDuration = 0.3f;
-
-    [Tooltip("펄스(두근거림) 효과 속도")]
     [SerializeField] private float pulseSpeed = 5.0f;
-
-    [Tooltip("펄스 효과 시 최소 알파값")]
-    [SerializeField] private float minPulseAlpha = 0.2f;
-
+    [SerializeField] private float minPulseAlpha = 0.4f;
     #endregion
 
     #region Internal State
-
-    private int currentPageIndex = 0;
-
-    // 조이스틱 중복 입력 방지용
-    private bool isJoystickReady = true;
-    private const float JoystickThreshold = 0.5f;
+    // 입력 가능 여부 플래그
+    private bool canInput = false;
 
     // 코루틴 관리 (중복 실행 방지)
     private Dictionary<GameObject, Coroutine> panelCoroutines = new Dictionary<GameObject, Coroutine>();
     private Dictionary<Image, Coroutine> imageCoroutines = new Dictionary<Image, Coroutine>();
 
-    // 펄스 효과용 원본 알파값 캐싱
     private float cachedOriginalAlpha = 1.0f;
-
     #endregion
 
+    #region Unity Lifecycle
+    private void Awake()
+    {
 
-    #region Input Handlers
+        // 초기화: 패널들은 꺼두기
+        if (resultPanel != null) resultPanel.SetActive(false);
+        if (summaryPanel != null) summaryPanel.SetActive(false);
+    }
+
+    private void Update()
+    {
+        // 결과 화면이 다 나오고 입력이 가능해지면 처리
+        if (canInput)
+        {
+            // 키보드 Space, Enter 또는 게임패드 'A' 버튼 대응
+            if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetButtonDown("Submit"))
+            {
+                GoHome();
+            }
+        }
+    }
+    #endregion
+
+    #region Public Methods
 
     /// <summary>
-    /// A 버튼 입력 처리: [결과 -> 요약] 또는 [요약 -> 메인]으로 상태 전환
+    /// 게임 종료 시 외부(GameManager 등)에서 호출
     /// </summary>
-    private void OnClickButtonInput()
+    public void ShowResult()
     {
-        // 오브젝트가 비활성화 상태라면 입력 무시
-        if (this == null || !gameObject.activeInHierarchy) return;
-
-        // 1. 결과 화면인 경우 -> 요약 화면으로 전환
-        if (resultPanel != null && resultPanel.activeSelf)
-        {
-            GoHome();
-            //GoSummaryPanel();
-        }
-        // 2. 요약 화면인 경우 -> 메인으로 이동
-        else if (summaryPanel != null && summaryPanel.activeSelf)
-        {
-            GoHome();
-        }
+        StartCoroutine(InitializeRoutine());
     }
 
     #endregion
@@ -109,96 +84,108 @@ public class OuttroUIManager : MonoBehaviour
     #region Logic Methods (Initialization & Navigation)
 
     /// <summary>
-    /// 결과 화면 초기화 코루틴: 데이터를 불러와 별점을 계산하고 애니메이션을 재생합니다.
+    /// 결과 화면 초기화 코루틴
     /// </summary>
-    /*
-    public IEnumerator InitializeRoutine()
+    private IEnumerator InitializeRoutine()
     {
-       FadePanel(resultPanel, true);
-        FadePanel(summaryPanel, false);
+        canInput = false; // 연출 중 입력 방지
 
-        // 1. 데이터 불러오기
-        int successCount = 0;
-        int mistakeCount = 0;
+        // 1. 패널 켜기
+        FadePanel(resultPanel, true);
+        if (summaryPanel != null) summaryPanel.SetActive(false);
+
+        // 2. 데이터 불러오기 (DataManager가 없으면 기본값 0)
+        int scoreCount = 0;
+        int damageCount = 0;
         float playTime = 0f;
 
         if (DataManager.Instance != null)
         {
-            successCount = DataManager.Instance.SuccessCount;
-            mistakeCount = DataManager.Instance.MistakeCount;
-            playTime = DataManager.Instance.PlayTime;
+            scoreCount = DataManager.Instance.GetScore();
+            damageCount = DataManager.Instance.GetShipHealth() + DataManager.Instance.GetShipShield();
+            playTime = DataManager.Instance.GetTotalPlayTime();
         }
 
-        // 2. 별점 계산 로직
-        int starCount = CalculateStarCount(successCount, mistakeCount, playTime);
+        // 점수 텍스트 표시 (옵션)
+        if (scoreText != null)
+        {
+            scoreText.text = $"Time: {playTime:F1}s\nMistakes: {damageCount}";
+        }
 
-        // 3. 별 애니메이션 재생 (초기화 -> 순차적 켜짐)
+        // 3. 별점 계산
+        int starCount = CalculateStarCount(scoreCount, damageCount, playTime);
+
+        // 4. 별 초기화 (모두 끄기)
         foreach (var star in starIcons)
         {
-            star.SetActive(false); // 일단 모두 끔
+            if (star != null)
+            {
+                star.SetActive(true); // 활성화는 하되
+                Image img = star.GetComponent<Image>();
+                if (img != null)
+                {
+                    Color c = img.color;
+                    img.color = new Color(c.r, c.g, c.b, 0f); // 투명하게 시작
+                }
+            }
         }
 
         yield return new WaitForSeconds(panelFadeDuration);
 
-        // 계산된 별점만큼 순차적으로 켜기
+        // 5. 별 애니메이션 재생 (순차적 켜짐)
         for (int i = 0; i < starCount; i++)
         {
-            if (i < starIcons.Length)
+            if (i < starIcons.Length && starIcons[i] != null)
             {
                 FadeInAndPulseStar(starIcons[i]);
-                yield return new WaitForSeconds(0.2f); // 순차적 딜레이
+                // 쾅! 하는 느낌을 주기 위해 잠시 대기
+                yield return new WaitForSeconds(0.4f);
             }
         }
+
+        yield return new WaitForSeconds(0.5f);
+        canInput = true; // 이제 입력 가능
+        Debug.Log("Result UI Ready. Press Space/Enter to go Home.");
     }
 
     /// <summary>
-    /// 성공 횟수, 실수, 시간을 기반으로 별점(0~3)을 계산합니다.
+    /// 별점 계산 로직
     /// </summary>
-    private int CalculateStarCount(int successCount, int mistakeCount, float playTime)
+    private int CalculateStarCount(int scoreCount, int damageCount, float playTime)
     {
-        // 기준: 기본 3점 만점 시작 -> 감점 방식 적용
-        int starCount = 3;
+        // 기본 3점 시작
+        int starCount = 0;
 
-        // 페널티 1: 실수 횟수
-        if (mistakeCount >= 3) starCount -= 1;
+        // 페널티 1: 
+        if (scoreCount >= 2000) starCount += 1;
 
-        // 보너스/페널티 2: 플레이 시간
-        // 예: 5분(300초) 이내 완료 시 보너스, 7분(420초) 초과 시 감점
-        float timeLimitForMaxStar = 300f;
-        float timeLimitForMinStar = 420f;
+        // 페널티 2: 
+        if (damageCount >= 50) starCount += 1;
 
-        if (playTime <= timeLimitForMaxStar) starCount += 1;
-        else if (playTime > timeLimitForMinStar) starCount -= 1;
+        // 페널티 3: 
+        float timeLimit = 180f;
+        if (playTime < timeLimit) starCount += 1;
 
-        // 최종 클램핑 (0 ~ 최대 별 개수)
+        // 최소 0점 ~ 최대 3점 (별 아이콘 개수에 맞춤)
         return Mathf.Clamp(starCount, 0, starIcons.Length);
-    }*/
+    }
 
-    private void GoHome()
+    public void GoHome()
     {
+        Debug.Log("Go Home");
         if (GameManager.Instance != null)
         {
-            GameManager.Instance.LoadScene("01_MainMenuScene");
+            GameManager.Instance.ChangeState(GameManager.GameState.MainMenu);
         }
         else
         {
-            // Fallback
             UnityEngine.SceneManagement.SceneManager.LoadScene("01_MainMenuScene");
         }
     }
-
-    private void GoSummery()
-    {
-
-    }
-
     #endregion
 
     #region Visual Effects (Coroutines)
 
-    /// <summary>
-    /// 패널의 CanvasGroup Alpha를 조절하여 페이드 인/아웃 합니다.
-    /// </summary>
     private void FadePanel(GameObject panel, bool show)
     {
         if (panel == null) return;
@@ -206,7 +193,6 @@ public class OuttroUIManager : MonoBehaviour
         CanvasGroup cg = panel.GetComponent<CanvasGroup>();
         if (cg == null) cg = panel.AddComponent<CanvasGroup>();
 
-        // 중복 실행 방지
         if (panelCoroutines.ContainsKey(panel) && panelCoroutines[panel] != null)
         {
             StopCoroutine(panelCoroutines[panel]);
@@ -219,15 +205,16 @@ public class OuttroUIManager : MonoBehaviour
     {
         float targetAlpha = show ? 1.0f : 0.0f;
         float startAlpha = cg.alpha;
-        float elapsed = 0f;
 
         if (show)
         {
             panel.SetActive(true);
-            cg.alpha = 0f;
-            startAlpha = 0f;
+            // 켜질 때는 0부터 시작
+            if (!panel.activeSelf || cg.alpha > 0.9f) cg.alpha = 0f;
+            startAlpha = cg.alpha;
         }
 
+        float elapsed = 0f;
         while (elapsed < panelFadeDuration)
         {
             elapsed += Time.deltaTime;
@@ -240,70 +227,6 @@ public class OuttroUIManager : MonoBehaviour
         if (!show)
         {
             panel.SetActive(false);
-        }
-    }
-
-    /// <summary>
-    /// 이미지(별)의 투명도를 조절하고, 완료 후 펄스 효과를 실행할지 결정합니다.
-    /// </summary>
-    private IEnumerator FadeImageRoutine(Image targetImage, float targetAlpha, bool activeState, bool startPulseAfterFade)
-    {
-        // 활성화 처리
-        if (activeState && !targetImage.gameObject.activeSelf)
-        {
-            targetImage.gameObject.SetActive(true);
-            Color c = targetImage.color;
-            targetImage.color = new Color(c.r, c.g, c.b, 0f);
-        }
-        else if (!activeState && !targetImage.gameObject.activeSelf)
-        {
-            yield break;
-        }
-
-        Color color = targetImage.color;
-        float startAlpha = color.a;
-        float elapsed = 0f;
-
-        // 1. 페이드 애니메이션
-        while (elapsed < imageFadeDuration)
-        {
-            elapsed += Time.deltaTime;
-            float newAlpha = Mathf.Lerp(startAlpha, targetAlpha, elapsed / imageFadeDuration);
-            targetImage.color = new Color(color.r, color.g, color.b, newAlpha);
-            yield return null;
-        }
-
-        targetImage.color = new Color(color.r, color.g, color.b, targetAlpha);
-
-        // 2. 후처리 (비활성화 또는 펄스 시작)
-        if (!activeState)
-        {
-            targetImage.gameObject.SetActive(false);
-        }
-        else if (startPulseAfterFade)
-        {
-            cachedOriginalAlpha = targetAlpha;
-            imageCoroutines[targetImage] = StartCoroutine(PulseImageRoutine(targetImage));
-        }
-    }
-
-    /// <summary>
-    /// 이미지를 주기적으로 깜빡이게(Pulse) 합니다.
-    /// </summary>
-    private IEnumerator PulseImageRoutine(Image targetImage)
-    {
-        Color originalColor = targetImage.color;
-
-        while (true)
-        {
-            // Sine 파동 (0~1)
-            float alphaRatio = (Mathf.Sin(Time.time * pulseSpeed) + 1.0f) / 2.0f;
-
-            // Min ~ Original Alpha 사이 보간
-            float targetAlpha = Mathf.Lerp(minPulseAlpha, cachedOriginalAlpha, alphaRatio);
-
-            targetImage.color = new Color(originalColor.r, originalColor.g, originalColor.b, targetAlpha);
-            yield return null;
         }
     }
 
@@ -321,22 +244,56 @@ public class OuttroUIManager : MonoBehaviour
             imageCoroutines.Remove(starImage);
         }
 
-        StartCoroutine(FadeImageRoutine(starImage, 1.0f, true, true));
+        // FadeIn 후 Pulse 시작
+        imageCoroutines[starImage] = StartCoroutine(FadeImageRoutine(starImage, 1.0f, true));
     }
 
-    private void StopPulseAndFadeOutStar(GameObject starObject)
+    /// <summary>
+    /// [누락되었던 부분 구현] 이미지를 페이드 인/아웃 하고 옵션에 따라 펄스 효과 실행
+    /// </summary>
+    private IEnumerator FadeImageRoutine(Image targetImage, float targetAlpha, bool pulseAfter)
     {
-        if (starObject == null) return;
-        Image starImage = starObject.GetComponent<Image>();
-        if (starImage == null) return;
+        Color startColor = targetImage.color;
+        float startAlpha = startColor.a;
+        float elapsed = 0f;
 
-        if (imageCoroutines.ContainsKey(starImage) && imageCoroutines[starImage] != null)
+        while (elapsed < imageFadeDuration)
         {
-            StopCoroutine(imageCoroutines[starImage]);
-            imageCoroutines.Remove(starImage);
+            elapsed += Time.deltaTime;
+            float newAlpha = Mathf.Lerp(startAlpha, targetAlpha, elapsed / imageFadeDuration);
+            targetImage.color = new Color(startColor.r, startColor.g, startColor.b, newAlpha);
+            yield return null;
         }
 
-        StartCoroutine(FadeImageRoutine(starImage, 0.0f, false, false));
+        targetImage.color = new Color(startColor.r, startColor.g, startColor.b, targetAlpha);
+
+        // 페이드가 끝난 후 펄스 효과 실행
+        if (pulseAfter)
+        {
+            if (imageCoroutines.ContainsKey(targetImage))
+                StopCoroutine(imageCoroutines[targetImage]);
+
+            imageCoroutines[targetImage] = StartCoroutine(PulseImageRoutine(targetImage));
+        }
+    }
+
+    private IEnumerator PulseImageRoutine(Image targetImage)
+    {
+        Color originalColor = targetImage.color;
+        // 펄스 시작 시점의 알파값을 원본으로 간주
+        float baseAlpha = originalColor.a;
+
+        while (true)
+        {
+            // Sine 파동 (0 ~ 1)
+            float alphaRatio = (Mathf.Sin(Time.time * pulseSpeed) + 1.0f) / 2.0f;
+
+            // Min ~ Max Alpha 사이 보간
+            float targetAlpha = Mathf.Lerp(minPulseAlpha, baseAlpha, alphaRatio);
+
+            targetImage.color = new Color(originalColor.r, originalColor.g, originalColor.b, targetAlpha);
+            yield return null;
+        }
     }
 
     #endregion

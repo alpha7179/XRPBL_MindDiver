@@ -19,18 +19,21 @@ public class GameManager : MonoBehaviour
     [Header("Game State")]
     // 현재 일시정지 상태 여부 확인
     public bool IsPaused = false;
+    public bool IsFailed = false;
     // 현재 활성화된 씬 이름 저장
     public string CurrentSceneName;
     // 현재 게임 상태 저장
     public GameState currentState;
     // 현재 게임 상태 저장
-    public PlayState currentPlayState = PlayState.Test;
+    public PlayState currentPlayState = PlayState.Play;
     #endregion
 
     #region Events
     // --- 전역 이벤트 (다른 매니저들이 구독) ---
     // 일시정지 상태 변경 시 발생
     public event Action<bool> OnPauseStateChanged;
+    // 실패 상태 변경 시 발생
+    public event Action<bool> OnFailStateChanged;
     // 씬 로드 완료 시 발생 (초기화용)
     public event Action<string> OnSceneLoaded;
     // 게임 클리어 (탈출 성공) 시 발생
@@ -110,6 +113,22 @@ public class GameManager : MonoBehaviour
         OnPauseStateChanged?.Invoke(IsPaused);
 
         Log($"[GameManager] Pause State: {IsPaused}");
+    }
+
+    public void ToggleFail()
+    {
+        // 인트로 씬 등 일시정지가 불필요한 씬 예외 처리
+        if (CurrentSceneName.Equals("IntroScene", StringComparison.OrdinalIgnoreCase)) return;
+
+        IsFailed = !IsFailed;
+
+        // 물리 연산 및 시간 정지/재개 (TimeScale 조절)
+        Time.timeScale = IsFailed ? 0f : 1f;
+
+        // 상태 변경 이벤트 발생
+        OnFailStateChanged?.Invoke(IsFailed);
+
+        Log($"[GameManager] Fail State: {IsFailed}");
     }
 
     /*

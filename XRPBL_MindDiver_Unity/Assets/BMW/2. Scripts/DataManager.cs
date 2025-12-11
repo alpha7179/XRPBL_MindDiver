@@ -204,13 +204,16 @@ public class DataManager : MonoBehaviour
     {
         if (shipShield > 0)
         {
-            shipShield -= amount;
+            if (shipShield >= amount) shipShield -= amount;
+            else if ((shipShield + shipHealth) >= amount) { shipHealth -= (amount - shipShield); shipShield = 0;}
+            else { shipHealth = 0; IngameUIManager.Instance.UpdateHP(shipHealth); shipShield = 0; }
             IngameUIManager.Instance.UpdateShield(shipShield);
             OnShieldChanged?.Invoke(shipShield, maxShipShield);
         }
         else
         {
-            shipHealth -= amount;
+            if (shipHealth >= amount) shipHealth -= amount;
+            else { shipHealth = 0; }
             IngameUIManager.Instance.UpdateHP(shipHealth);
             OnHealthChanged?.Invoke(shipHealth, maxShipHealth);
         }

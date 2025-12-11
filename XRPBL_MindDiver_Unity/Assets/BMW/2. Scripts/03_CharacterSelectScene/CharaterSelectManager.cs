@@ -5,7 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// 캐릭터 선택 화면에서 버튼 입력, 타이머, 비디오 시퀀스 재생을 관리하는 클래스
+/// 캐릭터 선택 화면 매니저 (수정됨: 토글 방식 + 3초 대기)
 /// </summary>
 public class CharaterSelectManager : MonoBehaviour
 {
@@ -20,8 +20,7 @@ public class CharaterSelectManager : MonoBehaviour
     public VideoClip[] outroClips;
 
     [Header("Settings")]
-    [Tooltip("동시 입력 유지 시간 (초)")]
-    // 버튼 동시 입력 유지 시간 설정
+    [Tooltip("모두 활성화 된 후 대기해야 하는 시간 (초)")]
     [SerializeField] private float requiredHoldTime = 3.0f;
 
     [Header("Text 구성요소")]
@@ -45,7 +44,7 @@ public class CharaterSelectManager : MonoBehaviour
     [SerializeField] private bool isDebugMode = true;
 
     [Header("디버그 옵션 (테스트용)")]
-    [Tooltip("체크 시 정면 버튼만 눌러도 타이머가 작동합니다.")]
+    [Tooltip("체크 시 정면 버튼만 활성화되어도 타이머가 작동합니다.")]
     // 단일 버튼 디버그 모드 활성화 여부
     [SerializeField] private bool enableSingleButtonDebug = false;
     #endregion
@@ -54,22 +53,24 @@ public class CharaterSelectManager : MonoBehaviour
     // 패널별 실행 중인 코루틴 관리 딕셔너리
     private Dictionary<GameObject, Coroutine> panelCoroutines = new Dictionary<GameObject, Coroutine>();
 
-    // 버튼 입력 상태 관리 배열 (0: Front, 1: Left, 2: Right)
-    private bool[] isButtonPressed = new bool[3];
-    // 현재 홀드 타이머 누적 시간
+    // 버튼 활성화 상태 관리 배열 (0: Front, 1: Left, 2: Right)
+    // true = 선택됨(활성화), false = 선택안됨(비활성화)
+    private bool[] isButtonActive = new bool[3];
+
+    // 현재 타이머 누적 시간
     private float currentHoldTimer = 0f;
     // 비디오 재생 시작 여부 확인
     private bool isVideoPlayed = false;
     #endregion
 
     #region Unity Lifecycle
-    /*
-     * 컴포넌트 초기화 및 유효성 검사 수행
-     */
     private void Start()
     {
         foreach (var video in VideoPanels) if (video) video.SetActive(false);
-        masterVolume = ((float)DataManager.Instance.GetVideoVolume()) / 100;
+
+        // 데이터 매니저 연동 (없으면 기본값 사용을 위해 try-catch 혹은 null 체크 권장하지만 기존 코드 유지)
+        if (DataManager.Instance != null)
+            masterVolume = ((float)DataManager.Instance.GetVideoVolume()) / 100;
 
         if (!CheckArrayValid(videoPlayers, "Video Players")) return;
 
@@ -79,54 +80,50 @@ public class CharaterSelectManager : MonoBehaviour
             videoPlayers[0].loopPointReached += OnVideoFinished;
         }
 
-        // 디버그 모드 활성화 시 경고 로그 출력
+        // 디버그 모드 경고
         if (enableSingleButtonDebug)
         {
             Debug.LogWarning("!!! [Test Mode] 정면 버튼만 눌러도 진행되는 모드가 켜져있습니다 !!!");
         }
-
     }
 
-    /*
-     * 입력 상태 모니터링 및 타이머 갱신 수행
-     */
     private void Update()
     {
         if (isVideoPlayed) return;
 
-        // 모든 버튼이 눌렸는지 확인
-        if (IsAllButtonsPressed())
+        // 조건 충족(모두 활성화 or 디버그 모드 충족) 확인
+        if (IsReadyToCharge())
         {
             currentHoldTimer += Time.deltaTime;
 
             // 1초 단위 로그 출력
             if (currentHoldTimer % 1.0f < Time.deltaTime)
-                Log($"Charging... {currentHoldTimer:F1} / {requiredHoldTime}");
+                Log($"Ready... Wait for start: {currentHoldTimer:F1} / {requiredHoldTime}");
 
-            // 유지 시간 도달 시 비디오 시퀀스 시작
+            // 대기 시간 도달 시 비디오 시퀀스 시작
             if (currentHoldTimer >= requiredHoldTime)
             {
                 currentHoldTimer = 0f;
                 isVideoPlayed = true;
 
-                // 안내 텍스트 숨김 처리
+                // 텍스트 완전 숨김 확인 및 비디오 패널 활성화
                 FadePanel(FrontButtonText, false);
                 FadePanel(RightButtonText, false);
                 FadePanel(LeftButtonText, false);
-                foreach (var video in VideoPanels) if (video) FadePanel(video,true);
+                foreach (var video in VideoPanels) if (video) FadePanel(video, true);
 
-                AudioManager.Instance.StopBGM();
+                if (AudioManager.Instance != null) AudioManager.Instance.StopBGM();
 
                 StartVideoSequence();
             }
         }
         else
         {
-            // 버튼 해제 시 타이머 초기화
+            // 조건 불충족 시 타이머 초기화
             if (currentHoldTimer > 0)
             {
                 currentHoldTimer = 0f;
-                Log("Button released. Timer reset.");
+                Log("Condition broken. Timer reset.");
             }
         }
     }
@@ -134,26 +131,25 @@ public class CharaterSelectManager : MonoBehaviour
 
     #region Input Logic
     /*
-     * 모든 버튼의 눌림 상태 확인 (디버그 모드 고려)
+     * 현재 상태가 타이머를 돌릴 준비가 되었는지 확인
      */
-    private bool IsAllButtonsPressed()
+    private bool IsReadyToCharge()
     {
+        // 디버그 모드: 정면(0번)만 활성화되어 있어도 OK
         if (enableSingleButtonDebug)
         {
-            return isButtonPressed[0];
+            return isButtonActive[0];
         }
 
-        return isButtonPressed.All(x => x);
+        // 일반 모드: 모든 버튼이 활성화(true)되어야 OK
+        return isButtonActive.All(x => x);
     }
     #endregion
 
     #region Video Logic
-    /*
-     * 비디오 재생 시퀀스 시작 처리
-     */
     private void StartVideoSequence()
     {
-        Log($"[VideoManager] {requiredHoldTime}s Hold Complete! Playing Outro Video...");
+        Log($"[VideoManager] {requiredHoldTime}s Ready! Playing Outro Video...");
 
         if (CheckArrayValid(outroClips, "Outro Clips"))
         {
@@ -161,24 +157,22 @@ public class CharaterSelectManager : MonoBehaviour
         }
     }
 
-    /*
-     * 파노라마 비디오 클립 재생 수행
-     */
     private void PlayPanoramicVideo(VideoClip[] clips)
     {
         for (int i = 0; i < 3; i++)
         {
+            // 배열 범위 안전 체크
+            if (i >= videoPlayers.Length || i >= clips.Length) break;
+
             if (videoPlayers[i] != null && clips[i] != null)
             {
                 videoPlayers[i].clip = clips[i];
-                
                 ApplyVolume(videoPlayers[i], i);
-
                 videoPlayers[i].Play();
             }
         }
 
-        // 비디오 플레이어 참조 오류 시 즉시 종료 처리
+        // 비디오 플레이어 0번 문제 시 즉시 종료 처리
         if (videoPlayers[0] == null || clips[0] == null)
         {
             OnVideoFinished(null);
@@ -187,16 +181,11 @@ public class CharaterSelectManager : MonoBehaviour
 
     private void ApplyVolume(VideoPlayer vp, int screenIndex)
     {
-        // 1. Audio Output Mode가 Direct(직접 출력)인지 확인
         if (vp.audioOutputMode == VideoAudioOutputMode.Direct)
         {
-            // 좌/우 화면(인덱스 1, 2)이고 음소거 옵션이 켜져있으면 0, 아니면 설정된 볼륨
             float finalVolume = (isSideDisplaySoundMute && screenIndex > 0) ? 0f : masterVolume;
-
-            // 트랙 0번의 볼륨을 설정
             vp.SetDirectAudioVolume(0, finalVolume);
         }
-        // 2. Audio Output Mode가 AudioSource인 경우
         else if (vp.audioOutputMode == VideoAudioOutputMode.AudioSource)
         {
             AudioSource source = vp.GetTargetAudioSource(0);
@@ -208,9 +197,6 @@ public class CharaterSelectManager : MonoBehaviour
         }
     }
 
-    /*
-     * 비디오 재생 완료 시 호출되어 씬 전환 수행
-     */
     private void OnVideoFinished(VideoPlayer vp)
     {
         Log("[VideoManager] Video Finished.");
@@ -228,57 +214,49 @@ public class CharaterSelectManager : MonoBehaviour
 
     #region UI Event Handlers
     // ---------------------------------------------------------
-    //  UI 이벤트 연결 함수
+    //  UI 이벤트 연결 함수 (토글 방식으로 변경됨)
     // ---------------------------------------------------------
-    /*
-     * 정면 버튼 누름 이벤트 처리
-     */
-    public void OnPointerDownFront() { SetButtonState(0, true); FadePanel(FrontButtonText, false); Log("Front Display Held"); }
-    /*
-     * 정면 버튼 뗌 이벤트 처리
-     */
-    public void OnPointerUpFront() { SetButtonState(0, false); if (!isVideoPlayed) { FadePanel(FrontButtonText, true); } Log("Front Display Released"); }
+
+    // [중요] EventTrigger의 Pointer Down에 연결하세요.
+    public void OnPointerDownFront() { ToggleButtonState(0, FrontButtonText); }
+    public void OnPointerDownLeft() { ToggleButtonState(1, LeftButtonText); }
+    public void OnPointerDownRight() { ToggleButtonState(2, RightButtonText); }
+
+    // [중요] 기존 설정 유지를 위해 남겨두었으나, 토글 방식이므로 뗐을 때(Up) 상태를 끄지 않습니다.
+    // EventTrigger에서 Pointer Up 이벤트를 제거하셔도 되고, 연결해 두셔도 무방합니다.
+    public void OnPointerUpFront() { /* Do Nothing */ }
+    public void OnPointerUpLeft() { /* Do Nothing */ }
+    public void OnPointerUpRight() { /* Do Nothing */ }
+
 
     /*
-     * 좌측 버튼 누름 이벤트 처리
+     * 버튼 상태 토글 (ON <-> OFF) 처리 및 UI 갱신
      */
-    public void OnPointerDownLeft() { SetButtonState(1, true); FadePanel(LeftButtonText, false); Log("Left Display Held"); }
-    /*
-     * 좌측 버튼 뗌 이벤트 처리
-     */
-    public void OnPointerUpLeft() { SetButtonState(1, false); if (!isVideoPlayed) { FadePanel(LeftButtonText, true); } Log("Left Display Released"); }
-
-    /*
-     * 우측 버튼 누름 이벤트 처리
-     */
-    public void OnPointerDownRight() { SetButtonState(2, true); FadePanel(RightButtonText, false); Log("Right Display Held"); }
-    /*
-     * 우측 버튼 뗌 이벤트 처리
-     */
-    public void OnPointerUpRight() { SetButtonState(2, false); if (!isVideoPlayed) { FadePanel(RightButtonText, true); } Log("Right Display Released"); }
-
-    /*
-     * 버튼 상태 갱신 및 로그 출력 수행
-     */
-    private void SetButtonState(int index, bool isPressed)
+    private void ToggleButtonState(int index, GameObject textObj)
     {
-        isButtonPressed[index] = isPressed;
-        if (isPressed) Log($"Button {index} Pressed");
-        else Log($"Button {index} Released");
+        // 이미 비디오가 시작되었으면 입력 무시
+        if (isVideoPlayed) return;
+
+        // 상태 반전 (True -> False, False -> True)
+        isButtonActive[index] = !isButtonActive[index];
+        bool isActive = isButtonActive[index];
+
+        // 로그 출력
+        Log($"Display {index} Toggled : {(isActive ? "ACTIVE" : "INACTIVE")}");
+
+        // 활성화 되면 -> 텍스트 숨김 (Fade Out)
+        // 비활성화 되면 -> 텍스트 보임 (Fade In)
+        FadePanel(textObj, !isActive);
     }
+
     #endregion
 
     #region Helper Methods
-    /*
-     * 배열 유효성 검사 수행
-     */
     private bool CheckArrayValid(System.Array array, string arrayName)
     {
         if (array == null || array.Length < 3)
         {
             Log($"[VideoManager] Error: {arrayName} array must have at least 3 elements.");
-
-            // 오류 발생 시에도 흐름 유지를 위해 종료 처리 호출 시도
             if (videoPlayers != null && videoPlayers.Length > 0 && videoPlayers[0] != null)
             {
                 OnVideoFinished(videoPlayers[0]);
@@ -288,9 +266,6 @@ public class CharaterSelectManager : MonoBehaviour
         return true;
     }
 
-    /*
-     * UI 패널 페이드 효과 코루틴 실행
-     */
     private void FadePanel(GameObject panel, bool show)
     {
         if (panel == null) return;
@@ -306,9 +281,6 @@ public class CharaterSelectManager : MonoBehaviour
         panelCoroutines[panel] = StartCoroutine(FadePanelRoutine(panel, cg, show));
     }
 
-    /*
-     * 알파값 조정을 통한 페이드 인/아웃 처리 코루틴
-     */
     private IEnumerator FadePanelRoutine(GameObject panel, CanvasGroup cg, bool show)
     {
         float targetAlpha = show ? 1.0f : 0.0f;
@@ -318,8 +290,9 @@ public class CharaterSelectManager : MonoBehaviour
         if (show)
         {
             panel.SetActive(true);
-            cg.alpha = 0f;
-            startAlpha = 0f;
+            // 이미 알파가 목표치와 비슷하면 깜빡임 방지를 위해 0으로 초기화하지 않음 (필요 시 수정)
+            if (startAlpha == 1.0f && show) { /* 이미 보여짐 */ }
+            else if (startAlpha == 0.0f && !show) { /* 이미 숨겨짐 */ }
         }
 
         while (elapsed < panelFadeDuration)
@@ -337,9 +310,6 @@ public class CharaterSelectManager : MonoBehaviour
         }
     }
 
-    /*
-     * 디버그 모드 시 로그 출력 수행
-     */
     public void Log(string message)
     {
         if (isDebugMode) Debug.Log(message);

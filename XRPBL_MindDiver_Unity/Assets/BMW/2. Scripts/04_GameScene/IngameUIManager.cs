@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -27,6 +28,7 @@ public class IngameUIManager : MonoBehaviour
     [SerializeField] private List<GameObject> instructionPanels;
     [SerializeField] private List<GameObject> manualPanels;
     [SerializeField] private List<GameObject> pausePanels;
+    [SerializeField] private List<GameObject> failPanels;
     [SerializeField] private List<GameObject> blackoutPanels;
     [SerializeField] private List<GameObject> takenDamagePanels;
 
@@ -109,6 +111,7 @@ public class IngameUIManager : MonoBehaviour
     #endregion
 
     #region Private Fields
+    private OuttroUIManager outtroUIManager;
     private int currentHealth;
     private int maxHealth;
     private int currentShield;
@@ -135,7 +138,7 @@ public class IngameUIManager : MonoBehaviour
     #region Unity Lifecycle
     private void Start()
     {
-        InitializePanels();
+        outtroUIManager = GetComponent<OuttroUIManager>();
 
         // 1. 비네팅 머티리얼 초기화
         foreach (var img in vignetteImages)
@@ -159,6 +162,7 @@ public class IngameUIManager : MonoBehaviour
             maxShield = DataManager.Instance.maxShipShield;
 
             GameManager.Instance.OnPauseStateChanged += HandlePauseState;
+            GameManager.Instance.OnFailStateChanged += HandleFailState;
             DataManager.Instance.OnHealthChanged += HandleHealthChange;
             DataManager.Instance.OnShieldChanged += HandleShieldChange;
             DataManager.Instance.OnDeBufferAdded += HandleDeBufferAdded;
@@ -172,6 +176,7 @@ public class IngameUIManager : MonoBehaviour
     {
         if (GameManager.Instance != null)
             GameManager.Instance.OnPauseStateChanged -= HandlePauseState;
+            GameManager.Instance.OnFailStateChanged -= HandleFailState;
 
         if (DataManager.Instance != null)
         {
@@ -241,6 +246,12 @@ public class IngameUIManager : MonoBehaviour
     {
         if (isPaused) OpenPausePanel();
         else ClosePausePanel();
+    }
+
+    private void HandleFailState(bool isFailed)
+    {
+        if (isFailed) OpenFailPanel();
+        else CloseFailPanel();
     }
     #endregion
 
@@ -419,13 +430,14 @@ public class IngameUIManager : MonoBehaviour
 
     #region UI Control Methods & Utils
     // ... (이전 코드와 동일, 생략 없이 사용하시면 됩니다)
-    private void InitializePanels()
+    public void InitializePanels()
     {
         SetPanelsActive(mainPanels, false);
         SetPanelsActive(infoPanels, false);
         SetPanelsActive(instructionPanels, false);
         SetPanelsActive(manualPanels, false);
         SetPanelsActive(pausePanels, false);
+        SetPanelsActive(failPanels, false);
         SetPanelsActive(takenDamagePanels, true); // 피격 패널 초기화
 
         if (DataManager.Instance != null)
@@ -454,16 +466,20 @@ public class IngameUIManager : MonoBehaviour
         foreach (var panel in panels) if (panel != null) panel.SetActive(isActive);
     }
 
-    public void OnClickPauseButton() { if (GameManager.Instance != null) { GameManager.Instance.TogglePause(); OpenPausePanel(); } }
+    public void OnClickPauseButton() { if (GameManager.Instance != null && !GetDisplayPanel()) { OpenPausePanel(); GameManager.Instance.TogglePause(); } }
+    public void OnClickFailButton() { if (GameManager.Instance != null) { OpenFailPanel(); GameManager.Instance.ToggleFail(); } }
     public void OnClickContinueButton() { if (GameManager.Instance != null) GameManager.Instance.TogglePause(); ClosePausePanel(); }
     public void OnClickBackButton() { Time.timeScale = 1f; if (GameManager.Instance != null) GameManager.Instance.ChangeState(GameManager.GameState.MainMenu); }
+    public void OnClickRetryButton() { Time.timeScale = 1f; if (GameManager.Instance != null) GameManager.Instance.ChangeState(GameManager.GameState.GameStage); }
 
     public void OpenInstructionPanel() { FadePanels(instructionPanels, true); SetDisplayPanel(true); }
     public void CloseInstructionPanel() { FadePanels(instructionPanels, false); SetDisplayPanel(false); }
     public void OpenManualPanel() { FadePanels(manualPanels, true); SetDisplayPanel(true); }
     public void CloseManualPanel() { FadePanels(manualPanels, false); SetDisplayPanel(false); }
-    public void OpenPausePanel() { FadePanels(pausePanels, true); SetDisplayPanel(true); }
-    public void ClosePausePanel() { FadePanels(pausePanels, false); SetDisplayPanel(false); }
+    public void OpenPausePanel() { foreach (var panel in pausePanels) panel.SetActive(true); SetDisplayPanel(true); }
+    public void ClosePausePanel() { foreach (var panel in pausePanels) panel.SetActive(false); SetDisplayPanel(false); }
+    public void OpenFailPanel() { foreach (var panel in failPanels) panel.SetActive(true); SetDisplayPanel(true); }
+    public void CloseFailPanel() { foreach (var panel in failPanels) panel.SetActive(false); SetDisplayPanel(false); }
     public void OpenMainPanel() { FadePanels(mainPanels, true); }
     public void CloseMainPanel() { FadePanels(mainPanels, false); }
     public void OpenInfoPanel() { FadePanels(infoPanels, true); }
@@ -524,6 +540,37 @@ public class IngameUIManager : MonoBehaviour
     }
 
     public void Log(string message) { if (isDebugMode) Debug.Log(message); }
-    public void ShowOuttroUI() { if (OuttroUIManager.Instance) { OuttroUIManager.Instance.resultPanel.SetActive(true); foreach (var Panel in blackoutPanels) { if (Panel) Panel.SetActive(true); } } }
+    public void ShowOuttroUI()
+    {
+        // 1. OuttroUIManager가 있으면 결과창 표시 요청
+        if (outtroUIManager != null)
+        {
+            outtroUIManager.ShowResult();
+
+            // [중요] Outtro UI 캔버스가 Ingame UI 캔버스보다 위에 그려져야 합니다.
+            // 만약 BlackoutPanel이 ResultPanel을 가린다면 아래 반복문을 주석 처리하세요.
+            foreach (var Panel in blackoutPanels)
+            {
+                if (Panel) Panel.SetActive(true);
+            }
+        }
+        else
+        {
+            Debug.LogError("OuttroUIManager가 씬에 없습니다!");
+        }
+    }
+
+    IEnumerator DelayRoutine(float n)
+    {
+        Debug.Log("시작");
+
+        // 3초 대기 (게임 시간이 멈추면 같이 멈춤)
+        yield return new WaitForSeconds(n);
+
+        // 만약 일시정지 상관없이 실제 시간으로 3초를 기다리려면:
+        // yield return new WaitForSecondsRealtime(3.0f);
+
+        Debug.Log($"{n}초 후 실행됨");
+    }
     #endregion
 }

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class EnemyMover : MonoBehaviour
 {
@@ -23,6 +24,8 @@ public class EnemyMover : MonoBehaviour
 
     [Header("적 공격력")]
     public int enemydamage = 5;
+
+    public bool printDebug = false;
 
 
     // 추적 기준이 되는 카메라 (3개 중 전방 카메라 하나만 지정해도 충분합니다)
@@ -114,7 +117,7 @@ public class EnemyMover : MonoBehaviour
         // 카메라 (또는 플레이어)와 오브젝트 사이의 월드 거리를 계산합니다.
         float distanceToTarget = Vector3.Distance(transform.position, primaryCamera.position);
         // 거리 확인용
-        Debug.Log("플레이어와 적 거리: " + distanceToTarget);
+        if(printDebug) Debug.Log("플레이어와 적 거리: " + distanceToTarget);
         if (!isTracking)
         {
             // 아직 추적 중이 아니라면, 감지 범위에 들어왔는지 확인합니다.
