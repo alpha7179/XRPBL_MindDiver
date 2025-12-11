@@ -715,6 +715,21 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6896035521004701258, guid: 883f671825e08e24f8a62ddf509ea597,
+        type: 3}
+      propertyPath: bullet
+      value: 9999
+      objectReference: {fileID: 0}
+    - target: {fileID: 6896035521004701258, guid: 883f671825e08e24f8a62ddf509ea597,
+        type: 3}
+      propertyPath: shipHealth
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 6896035521004701258, guid: 883f671825e08e24f8a62ddf509ea597,
+        type: 3}
+      propertyPath: shipShield
+      value: 100
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

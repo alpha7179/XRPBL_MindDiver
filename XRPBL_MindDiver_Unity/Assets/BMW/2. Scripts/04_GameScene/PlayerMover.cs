@@ -92,16 +92,12 @@ public class PlayerMover : MonoBehaviour
             StartConnectionSequence();
         }
     }
-
-    // ▼▼▼ [핵심 수정] 안전한 연결 시작 함수 ▼▼▼
     private void StartConnectionSequence()
     {
         // 이미 돌고 있는 연결 시도가 있다면 중단하고 새로 시작 (중복 방지)
         if (_initCoroutine != null) StopCoroutine(_initCoroutine);
         _initCoroutine = StartCoroutine(InitializeLogitechSDK());
     }
-
-    // ▼▼▼ [핵심 수정] 강화된 초기화 코루틴 ▼▼▼
     private IEnumerator InitializeLogitechSDK()
     {
         // 이미 연결된 상태면 패스
@@ -146,13 +142,11 @@ public class PlayerMover : MonoBehaviour
             else
             {
                 // 실패 시 경고 출력 후 2초 대기
-                // Debug.LogWarning은 너무 많이 뜨면 거슬리니, 연결 안될 때만 1회성으로 보거나 주석 처리
-                // Debug.LogWarning("[PlayerMover] 연결 실패. 2초 후 재시도... (G-HUB 켜져있나요?)");
+                // Debug.LogWarning("[PlayerMover] 연결 실패. 2초 후 재시도...)");
                 yield return new WaitForSeconds(2f);
             }
         }
     }
-    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     private void Update()
     {

@@ -202,7 +202,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 100
+  m_text: 0
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 081817c39b4c6b249b01e1324e498d23, type: 2}
   m_sharedMaterial: {fileID: 2761718849294679561, guid: 081817c39b4c6b249b01e1324e498d23,
@@ -3739,7 +3739,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 100
+  m_text: 0
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 081817c39b4c6b249b01e1324e498d23, type: 2}
   m_sharedMaterial: {fileID: 2761718849294679561, guid: 081817c39b4c6b249b01e1324e498d23,
@@ -5708,7 +5708,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 100
+  m_text: 0
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 081817c39b4c6b249b01e1324e498d23, type: 2}
   m_sharedMaterial: {fileID: 2761718849294679561, guid: 081817c39b4c6b249b01e1324e498d23,
@@ -6124,7 +6124,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 100
+  m_text: 9999
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 081817c39b4c6b249b01e1324e498d23, type: 2}
   m_sharedMaterial: {fileID: 2761718849294679561, guid: 081817c39b4c6b249b01e1324e498d23,
@@ -11394,7 +11394,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 100
+  m_text: 0
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 081817c39b4c6b249b01e1324e498d23, type: 2}
   m_sharedMaterial: {fileID: 2761718849294679561, guid: 081817c39b4c6b249b01e1324e498d23,
@@ -12425,7 +12425,7 @@ MonoBehaviour:
   m_MinValue: 0
   m_MaxValue: 1
   m_WholeNumbers: 0
-  m_Value: 1
+  m_Value: 0
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -13204,7 +13204,7 @@ MonoBehaviour:
   m_MinValue: 0
   m_MaxValue: 1
   m_WholeNumbers: 0
-  m_Value: 1
+  m_Value: 0
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -18095,7 +18095,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 100
+  m_text: 0
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 081817c39b4c6b249b01e1324e498d23, type: 2}
   m_sharedMaterial: {fileID: 2761718849294679561, guid: 081817c39b4c6b249b01e1324e498d23,

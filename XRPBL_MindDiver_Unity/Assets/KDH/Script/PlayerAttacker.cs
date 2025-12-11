@@ -21,9 +21,12 @@ public class PlayerAttacker : MonoBehaviour
 
     void Update()
     {
+        CheckGameOver();
+
         // 마우스 왼쪽 버튼(0번)이 눌렸는지 확인합니다.
         if (Input.GetMouseButtonDown(0))
         {
+            if(DataManager.Instance != null) DataManager.Instance.SetBullet(DataManager.Instance.GetBullet() - 1);
             HandleClick();
         }
     }
@@ -64,6 +67,17 @@ public class PlayerAttacker : MonoBehaviour
                     energy.TakeDamage(energy.damagePerClick);
                     return;
                 }
+            }
+        }
+    }
+
+    private void CheckGameOver()
+    {
+        if (DataManager.Instance != null && IngameUIManager.Instance != null)
+        {
+            if (DataManager.Instance.GetBullet() <= 0 && !IngameUIManager.Instance.GetDisplayPanel())
+            {
+                IngameUIManager.Instance.OnClickFailButton();
             }
         }
     }

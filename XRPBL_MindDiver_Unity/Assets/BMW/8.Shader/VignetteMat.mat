@@ -55,7 +55,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Radius: 0.5417127
+    - _Radius: 0.11744737
     - _Rounding: 0.06
     - _Size: 1.002
     - _Softness: 1
