@@ -3,48 +3,48 @@ using UnityEngine.Rendering;
 
 public class EnemyMover : MonoBehaviour
 {
-    [Header("À§Ä¡ ¼³Á¤")]
-    //public Transform target; // ÇÃ·¹ÀÌ¾î Transform
-    public float minDistance = 1600f; // ÇÃ·¹ÀÌ¾î·ÎºÎÅÍ ÃÖ¼Ò °Å¸®
-    public float maxDistance = 1800f; // ÇÃ·¹ÀÌ¾î·ÎºÎÅÍ ÃÖ´ë °Å¸®
-    //public float flightHeight = 0f; // ÇÃ·¹ÀÌ¾î ±âÁØ ¼öÁ÷ ³ôÀÌ ¿ÀÇÁ¼Â
-    // [¼öÁ¤] °íÁ¤ ³ôÀÌ ´ë½Å ³ôÀÌ ¹üÀ§ ¼³Á¤
-    public float minFlightHeight = -200f; // Ä«¸Ş¶ó¸¦ ±âÁØÀ¸·Î ÃÖ¼Ò ³ôÀÌ
-    public float maxFlightHeight = 180f; // Ä«¸Ş¶ó¸¦ ±âÁØÀ¸·Î ÃÖ´ë ³ôÀÌ
-    // 90µµ(¿À¸¥ÂÊ)¿Í 270µµ(¿ŞÂÊ)¸¦ Áß½ÉÀ¸·Î Çã¿ëµÇ´Â °¢µµ ¹üÀ§ (¿¹: 30ÀÌ¸é 60~120µµ, 240~300µµ Çã¿ë)
+    [Header("ìœ„ì¹˜ ì„¤ì •")]
+    //public Transform target; // í”Œë ˆì´ì–´ Transform
+    public float minDistance = 1800f; // í”Œë ˆì´ì–´ë¡œë¶€í„° ìµœì†Œ ê±°ë¦¬
+    public float maxDistance = 2000f; // í”Œë ˆì´ì–´ë¡œë¶€í„° ìµœëŒ€ ê±°ë¦¬
+    //public float flightHeight = 0f; // í”Œë ˆì´ì–´ ê¸°ì¤€ ìˆ˜ì§ ë†’ì´ ì˜¤í”„ì…‹
+    // [ìˆ˜ì •] ê³ ì • ë†’ì´ ëŒ€ì‹  ë†’ì´ ë²”ìœ„ ì„¤ì •
+    public float minFlightHeight = -200f; // ì¹´ë©”ë¼ë¥¼ ê¸°ì¤€ìœ¼ë¡œ ìµœì†Œ ë†’ì´
+    public float maxFlightHeight = 180f; // ì¹´ë©”ë¼ë¥¼ ê¸°ì¤€ìœ¼ë¡œ ìµœëŒ€ ë†’ì´
+    // 90ë„(ì˜¤ë¥¸ìª½)ì™€ 270ë„(ì™¼ìª½)ë¥¼ ì¤‘ì‹¬ìœ¼ë¡œ í—ˆìš©ë˜ëŠ” ê°ë„ ë²”ìœ„ (ì˜ˆ: 30ì´ë©´ 60~120ë„, 240~300ë„ í—ˆìš©)
     public float sectorAngleRange = 40f;
 
-    [Header("ÀÌµ¿ ¹× ºÒ±ÔÄ¢¼º")]
-    public float movementSpeed = 2f; // ¸ñÇ¥ ÁöÁ¡À¸·Î ÀÌµ¿ÇÏ´Â ¼Óµµ
-    public float targetChangeInterval = 5f; // ¸ñÇ¥ ÁöÁ¡À» º¯°æÇÒ ÁÖ±â (ÃÊ)
+    [Header("ì´ë™ ë° ë¶ˆê·œì¹™ì„±")]
+    public float movementSpeed = 2f; // ëª©í‘œ ì§€ì ìœ¼ë¡œ ì´ë™í•˜ëŠ” ì†ë„
+    public float targetChangeInterval = 5f; // ëª©í‘œ ì§€ì ì„ ë³€ê²½í•  ì£¼ê¸° (ì´ˆ)
 
-    [Header("°¨Áö ¹× »óÅÂ")]
-    public float detectionRadius = 20f; // ÃßÀûÀ» ½ÃÀÛÇÒ ÃÖ´ë °Å¸® (°¨Áö ¹üÀ§)
-    private bool isTracking = false; // ÇöÀç ÃßÀû ÁßÀÎÁö »óÅÂ
+    [Header("ê°ì§€ ë° ìƒíƒœ")]
+    public float detectionRadius = 70f; // ì¶”ì ì„ ì‹œì‘í•  ìµœëŒ€ ê±°ë¦¬ (ê°ì§€ ë²”ìœ„)
+    private bool isTracking = false; // í˜„ì¬ ì¶”ì  ì¤‘ì¸ì§€ ìƒíƒœ
 
-    [Header("Àû °ø°İ·Â")]
+    [Header("ì  ê³µê²©ë ¥")]
     public int enemydamage = 5;
 
     public bool printDebug = false;
 
 
-    // ÃßÀû ±âÁØÀÌ µÇ´Â Ä«¸Ş¶ó (3°³ Áß Àü¹æ Ä«¸Ş¶ó ÇÏ³ª¸¸ ÁöÁ¤ÇØµµ ÃæºĞÇÕ´Ï´Ù)
+    // ì¶”ì  ê¸°ì¤€ì´ ë˜ëŠ” ì¹´ë©”ë¼ (3ê°œ ì¤‘ ì „ë°© ì¹´ë©”ë¼ í•˜ë‚˜ë§Œ ì§€ì •í•´ë„ ì¶©ë¶„í•©ë‹ˆë‹¤)
     public Transform primaryCamera;
-    // ÀÌ º¯¼ö¿¡ ÀúÀåµÇ´Â À§Ä¡´Â Ä«¸Ş¶óÀÇ ·ÎÄÃ °ø°£¿¡¼­ÀÇ ¸ñÇ¥ À§Ä¡ÀÔ´Ï´Ù.
+    // ì´ ë³€ìˆ˜ì— ì €ì¥ë˜ëŠ” ìœ„ì¹˜ëŠ” ì¹´ë©”ë¼ì˜ ë¡œì»¬ ê³µê°„ì—ì„œì˜ ëª©í‘œ ìœ„ì¹˜ì…ë‹ˆë‹¤.
     private Vector3 currentLocalTargetPosition; 
     private float timer;
 
     private bool ScreenRight;
 
-    // ³ªÁß¿¡ À¯Àú Å° ³ôÀÌ ÀÎ½ÄÀ» ÅëÇØ Àû ÀÌµ¿ À§Ä¡ Á¶Á¤¿ëÀ¸·Î »ç¿ëÇÒ °Í
+    // ë‚˜ì¤‘ì— ìœ ì € í‚¤ ë†’ì´ ì¸ì‹ì„ í†µí•´ ì  ì´ë™ ìœ„ì¹˜ ì¡°ì •ìš©ìœ¼ë¡œ ì‚¬ìš©í•  ê²ƒ
     private float userheight = 0f;
 
-    //±¸¹öÀü
+    //êµ¬ë²„ì „
     /*private void Start()
     {
         if (target == null)
         {
-            // "MainCamera" ÅÂ±×¸¦ °¡Áø ¿ÀºêÁ§Æ®¸¦ ÀÚµ¿À¸·Î Ã£½À´Ï´Ù.
+            // "MainCamera" íƒœê·¸ë¥¼ ê°€ì§„ ì˜¤ë¸Œì íŠ¸ë¥¼ ìë™ìœ¼ë¡œ ì°¾ìŠµë‹ˆë‹¤.
             GameObject player = GameObject.FindGameObjectWithTag("MainCamera");
             if (player != null)
             {
@@ -52,27 +52,27 @@ public class EnemyMover : MonoBehaviour
             }
             else
             {
-                Debug.LogError("MainCamera ¿ÀºêÁ§Æ®¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù. 'MainCamera' ÅÂ±×¸¦ È®ÀÎÇÏ°Å³ª, Inspector¿¡¼­ Á÷Á¢ ÇÒ´çÇØ ÁÖ¼¼¿ä.");
-                enabled = false; // ½ºÅ©¸³Æ® ºñÈ°¼ºÈ­
+                Debug.LogError("MainCamera ì˜¤ë¸Œì íŠ¸ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤. 'MainCamera' íƒœê·¸ë¥¼ í™•ì¸í•˜ê±°ë‚˜, Inspectorì—ì„œ ì§ì ‘ í• ë‹¹í•´ ì£¼ì„¸ìš”.");
+                enabled = false; // ìŠ¤í¬ë¦½íŠ¸ ë¹„í™œì„±í™”
                 return;
             }
         }*/
     private void Start()
     {
-        // Target ´ë½Å PrimaryCamera ÇÒ´ç ·ÎÁ÷À» È®ÀÎÇÕ´Ï´Ù.
+        // Target ëŒ€ì‹  PrimaryCamera í• ë‹¹ ë¡œì§ì„ í™•ì¸í•©ë‹ˆë‹¤.
         if (primaryCamera == null)
         {
-            // Main Camera¸¦ ±âº»°ªÀ¸·Î »ç¿ëÇÕ´Ï´Ù.
+            // Main Cameraë¥¼ ê¸°ë³¸ê°’ìœ¼ë¡œ ì‚¬ìš©í•©ë‹ˆë‹¤.
             primaryCamera = Camera.main.transform;
             if (primaryCamera == null)
             {
-                Debug.LogError("Primary Camera¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù. Inspector¿¡¼­ ÇÒ´çÇÏ°Å³ª, ¾À¿¡ Main Camera°¡ ÀÖ´ÂÁö È®ÀÎÇÏ¼¼¿ä.");
+                Debug.LogError("Primary Cameraë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤. Inspectorì—ì„œ í• ë‹¹í•˜ê±°ë‚˜, ì”¬ì— Main Cameraê°€ ìˆëŠ”ì§€ í™•ì¸í•˜ì„¸ìš”.");
                 enabled = false;
                 return;
             }
         }
 
-        // ÃÊ±â ¸ñÇ¥ È­¸é ¹× À§Ä¡ ¼³Á¤
+        // ì´ˆê¸° ëª©í‘œ í™”ë©´ ë° ìœ„ì¹˜ ì„¤ì •
         if (Random.value < 0.5f)
             ScreenRight = true;
         currentLocalTargetPosition = GetNewLocalTargetPosition(ScreenRight);
@@ -82,11 +82,11 @@ public class EnemyMover : MonoBehaviour
     {
         if (target == null) return;
 
-        // 1. ¸ñÇ¥ À§Ä¡ °»½Å Å¸ÀÌ¸Ó
+        // 1. ëª©í‘œ ìœ„ì¹˜ ê°±ì‹  íƒ€ì´ë¨¸
         timer -= Time.deltaTime;
         if (timer <= 0f)
         {
-            // ÇÃ·¹ÀÌ¾î°¡ ½Ã°£ ¾È¿¡ ÅÍÄ¡¿¡ ½ÇÆĞÇÑ °æ¿ì Àû °ø°İ
+            // í”Œë ˆì´ì–´ê°€ ì‹œê°„ ì•ˆì— í„°ì¹˜ì— ì‹¤íŒ¨í•œ ê²½ìš° ì  ê³µê²©
             if (DataManager.Instance != null)
             {
                 DataManager.Instance.TakeDamage(enemydamage);
@@ -95,174 +95,176 @@ public class EnemyMover : MonoBehaviour
             timer = targetChangeInterval;
         }
 
-        // 2. ¸ñÇ¥ ÁöÁ¡À¸·Î ÀÌµ¿
-        // ¸ñÇ¥ À§Ä¡·Î ºÎµå·´°Ô ÀÌµ¿ÇÕ´Ï´Ù.
+        // 2. ëª©í‘œ ì§€ì ìœ¼ë¡œ ì´ë™
+        // ëª©í‘œ ìœ„ì¹˜ë¡œ ë¶€ë“œëŸ½ê²Œ ì´ë™í•©ë‹ˆë‹¤.
         transform.position = Vector3.Lerp(
             transform.position,
             currentTargetPosition,
             Time.deltaTime * movementSpeed
         );
 
-        // 3. ÇÃ·¹ÀÌ¾î ¹Ù¶óº¸±â (¼±ÅÃ »çÇ×)
-        // ¿ÀºêÁ§Æ®°¡ ÇÃ·¹ÀÌ¾î¸¦ ÇâÇÏµµ·Ï È¸Àü½ÃÅµ´Ï´Ù.
+        // 3. í”Œë ˆì´ì–´ ë°”ë¼ë³´ê¸° (ì„ íƒ ì‚¬í•­)
+        // ì˜¤ë¸Œì íŠ¸ê°€ í”Œë ˆì´ì–´ë¥¼ í–¥í•˜ë„ë¡ íšŒì „ì‹œí‚µë‹ˆë‹¤.
         transform.LookAt(target);
     }*/
 
-    // LateUpdate¿¡¼­ Ã³¸®ÇÏ¿© Ä«¸Ş¶ó ¿òÁ÷ÀÓ ÈÄ À§Ä¡¸¦ »ó¼â½ÃÅµ´Ï´Ù.
+    // LateUpdateì—ì„œ ì²˜ë¦¬í•˜ì—¬ ì¹´ë©”ë¼ ì›€ì§ì„ í›„ ìœ„ì¹˜ë¥¼ ìƒì‡„ì‹œí‚µë‹ˆë‹¤.
     void LateUpdate()
     {
         if (primaryCamera == null) return;
 
-        // °¨Áö ¹üÀ§ È®ÀÎ
-        // Ä«¸Ş¶ó (¶Ç´Â ÇÃ·¹ÀÌ¾î)¿Í ¿ÀºêÁ§Æ® »çÀÌÀÇ ¿ùµå °Å¸®¸¦ °è»êÇÕ´Ï´Ù.
+        // ê°ì§€ ë²”ìœ„ í™•ì¸
+        // ì¹´ë©”ë¼ (ë˜ëŠ” í”Œë ˆì´ì–´)ì™€ ì˜¤ë¸Œì íŠ¸ ì‚¬ì´ì˜ ì›”ë“œ ê±°ë¦¬ë¥¼ ê³„ì‚°í•©ë‹ˆë‹¤.
         float distanceToTarget = Vector3.Distance(transform.position, primaryCamera.position);
-        // °Å¸® È®ÀÎ¿ë
-        if(printDebug) Debug.Log("ÇÃ·¹ÀÌ¾î¿Í Àû °Å¸®: " + distanceToTarget);
+        
+        // ê±°ë¦¬ í™•ì¸ìš©
+        //Debug.Log("í”Œë ˆì´ì–´ì™€ ì  ê±°ë¦¬: " + distanceToTarget);
+
         if (!isTracking)
         {
-            // ¾ÆÁ÷ ÃßÀû ÁßÀÌ ¾Æ´Ï¶ó¸é, °¨Áö ¹üÀ§¿¡ µé¾î¿Ô´ÂÁö È®ÀÎÇÕ´Ï´Ù.
+            // ì•„ì§ ì¶”ì  ì¤‘ì´ ì•„ë‹ˆë¼ë©´, ê°ì§€ ë²”ìœ„ì— ë“¤ì–´ì™”ëŠ”ì§€ í™•ì¸í•©ë‹ˆë‹¤.
             if (distanceToTarget <= detectionRadius)
             {
                 isTracking = true;
-                // ÃßÀû ½ÃÀÛ ½Ã ÃÊ±â ¸ñÇ¥ À§Ä¡ ¼³Á¤
+                // ì¶”ì  ì‹œì‘ ì‹œ ì´ˆê¸° ëª©í‘œ ìœ„ì¹˜ ì„¤ì •
                 currentLocalTargetPosition = GetNewLocalTargetPosition(ScreenRight);
                 timer = targetChangeInterval;
-                Debug.Log("¿ÀºêÁ§Æ®°¡ ÇÃ·¹ÀÌ¾î °¨Áö ¹üÀ§¿¡ ÁøÀÔÇß½À´Ï´Ù. ÃßÀû ½ÃÀÛ!");
+                Debug.Log("ì˜¤ë¸Œì íŠ¸ê°€ í”Œë ˆì´ì–´ ê°ì§€ ë²”ìœ„ì— ì§„ì…í–ˆìŠµë‹ˆë‹¤. ì¶”ì  ì‹œì‘!");
             }
             else
             {
-                // °¨Áö ¹üÀ§ ¹Û¿¡ ÀÖ´Ù¸é ¾Æ¹«°Íµµ ÇÏÁö ¾Ê½À´Ï´Ù. (ÃßÀû Áß´Ü)
+                // ê°ì§€ ë²”ìœ„ ë°–ì— ìˆë‹¤ë©´ ì•„ë¬´ê²ƒë„ í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤. (ì¶”ì  ì¤‘ë‹¨)
                 return;
             }
         }
-        else // isTracking == true (ÃßÀû Áß)
+        else // isTracking == true (ì¶”ì  ì¤‘)
         {
-            // °¨Áö ¹üÀ§¸¦ ¹ş¾î³ª¸é ÃßÀûÀ» Áß´ÜÇÒÁö °áÁ¤ÇÒ ¼ö ÀÖ½À´Ï´Ù.
-            // (ÀÏ¹İÀûÀ¸·Î ÇÑ¹ø ÃßÀûÀ» ½ÃÀÛÇÏ¸é ¹üÀ§¸¦ ¹ş¾î³ªµµ °è¼Ó ÃßÀûÇÏÁö¸¸, ¿©±â¼­´Â ¹ş¾î³ª¸é ¸ØÃßµµ·Ï ±¸ÇöÇÕ´Ï´Ù.)
-            if (distanceToTarget > detectionRadius * 1.2f) // °¨Áö ¹üÀ§º¸´Ù Á¶±İ ´õ ¸Ö¾îÁ®¾ß ¸ØÃßµµ·Ï(¿©À¯ °ø°£) ¼³Á¤
+            // ê°ì§€ ë²”ìœ„ë¥¼ ë²—ì–´ë‚˜ë©´ ì¶”ì ì„ ì¤‘ë‹¨í• ì§€ ê²°ì •í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
+            // (ì¼ë°˜ì ìœ¼ë¡œ í•œë²ˆ ì¶”ì ì„ ì‹œì‘í•˜ë©´ ë²”ìœ„ë¥¼ ë²—ì–´ë‚˜ë„ ê³„ì† ì¶”ì í•˜ì§€ë§Œ, ì—¬ê¸°ì„œëŠ” ë²—ì–´ë‚˜ë©´ ë©ˆì¶”ë„ë¡ êµ¬í˜„í•©ë‹ˆë‹¤.)
+            if (distanceToTarget > detectionRadius * 1.2f) // ê°ì§€ ë²”ìœ„ë³´ë‹¤ ì¡°ê¸ˆ ë” ë©€ì–´ì ¸ì•¼ ë©ˆì¶”ë„ë¡(ì—¬ìœ  ê³µê°„) ì„¤ì •
             {
                 isTracking = false;
-                Debug.Log("¿ÀºêÁ§Æ®°¡ °¨Áö ¹üÀ§¸¦ ¹ş¾î³µ½À´Ï´Ù. ÃßÀû Áß´Ü.");
+                Debug.Log("ì˜¤ë¸Œì íŠ¸ê°€ ê°ì§€ ë²”ìœ„ë¥¼ ë²—ì–´ë‚¬ìŠµë‹ˆë‹¤. ì¶”ì  ì¤‘ë‹¨.");
                 return;
             }
         }
 
-        // ¸ñÇ¥ À§Ä¡ °»½Å Å¸ÀÌ¸Ó
+        // ëª©í‘œ ìœ„ì¹˜ ê°±ì‹  íƒ€ì´ë¨¸
         timer -= Time.deltaTime;
         if (timer <= 0f)
         {
-            // ·ÎÄÃ ¸ñÇ¥ À§Ä¡ °»½Å (ÇÃ·¹ÀÌ¾î µ¥¹ÌÁö ¿©±â¿¡)
+            // ë¡œì»¬ ëª©í‘œ ìœ„ì¹˜ ê°±ì‹  (í”Œë ˆì´ì–´ ë°ë¯¸ì§€ ì—¬ê¸°ì—)
             DataManager.Instance.TakeDamage(enemydamage);
 
             currentLocalTargetPosition = GetNewLocalTargetPosition(ScreenRight);
             timer = targetChangeInterval;
         }
 
-        // ·ÎÄÃ À§Ä¡¸¦ ¿ùµå À§Ä¡·Î º¯È¯
+        // ë¡œì»¬ ìœ„ì¹˜ë¥¼ ì›”ë“œ ìœ„ì¹˜ë¡œ ë³€í™˜
 
-        // ¿ÀºêÁ§Æ®°¡ 'Ä«¸Ş¶óÀÇ ÀÚ½Ä'ÀÎ °ÍÃ³·³ ¿òÁ÷ÀÌµµ·Ï ¿ùµå À§Ä¡¸¦ °è»êÇÕ´Ï´Ù.
-        // primaryCamera.TransformPoint: ·ÎÄÃ ÁÂÇ¥¸¦ ¿ùµå ÁÂÇ¥·Î º¯È¯
+        // ì˜¤ë¸Œì íŠ¸ê°€ 'ì¹´ë©”ë¼ì˜ ìì‹'ì¸ ê²ƒì²˜ëŸ¼ ì›€ì§ì´ë„ë¡ ì›”ë“œ ìœ„ì¹˜ë¥¼ ê³„ì‚°í•©ë‹ˆë‹¤.
+        // primaryCamera.TransformPoint: ë¡œì»¬ ì¢Œí‘œë¥¼ ì›”ë“œ ì¢Œí‘œë¡œ ë³€í™˜
         Vector3 worldTargetPosition = primaryCamera.TransformPoint(currentLocalTargetPosition);
 
-        // ºÎµå·¯¿î ÀÌµ¿ (Lerp)
+        // ë¶€ë“œëŸ¬ìš´ ì´ë™ (Lerp)
         transform.position = Vector3.Lerp(
             transform.position,
             worldTargetPosition,
             Time.deltaTime * movementSpeed
         );
 
-        // È¸Àü (Ä«¸Ş¶ó ±âÁØÀ¸·Î ÁÂ/¿ì ½Ã¾ß°¢À» À¯ÁöÇØ¾ß ÇÏ¹Ç·Î, Ä«¸Ş¶ó´Â ¹Ù¶óº¸Áö ¾Ê½À´Ï´Ù.)
-        // ¿ÀºêÁ§Æ®ÀÇ È¸ÀüÀº ·ÎÄÃ ¿òÁ÷ÀÓ¿¡ ¸ÂÃç ÀÚ¿¬½º·´°Ô µû¶ó°¡°Ô µÓ´Ï´Ù.
+        // íšŒì „ (ì¹´ë©”ë¼ ê¸°ì¤€ìœ¼ë¡œ ì¢Œ/ìš° ì‹œì•¼ê°ì„ ìœ ì§€í•´ì•¼ í•˜ë¯€ë¡œ, ì¹´ë©”ë¼ëŠ” ë°”ë¼ë³´ì§€ ì•ŠìŠµë‹ˆë‹¤.)
+        // ì˜¤ë¸Œì íŠ¸ì˜ íšŒì „ì€ ë¡œì»¬ ì›€ì§ì„ì— ë§ì¶° ìì—°ìŠ¤ëŸ½ê²Œ ë”°ë¼ê°€ê²Œ ë‘¡ë‹ˆë‹¤.
     }
 
     /*/// <summary>
-    /// ÇÃ·¹ÀÌ¾î ÁÖº¯ÀÇ Çã¿ëµÈ °¢µµ¿Í °Å¸® ³»¿¡¼­ »õ·Î¿î ¸ñÇ¥ À§Ä¡¸¦ »ı¼ºÇÕ´Ï´Ù.
+    /// í”Œë ˆì´ì–´ ì£¼ë³€ì˜ í—ˆìš©ëœ ê°ë„ì™€ ê±°ë¦¬ ë‚´ì—ì„œ ìƒˆë¡œìš´ ëª©í‘œ ìœ„ì¹˜ë¥¼ ìƒì„±í•©ë‹ˆë‹¤.
     /// </summary>
     private Vector3 GetNewTargetPosition(bool ScreenDirection)
     {
-        // 1. ·£´ı °¢µµ ¹× °Å¸® »ı¼º
+        // 1. ëœë¤ ê°ë„ ë° ê±°ë¦¬ ìƒì„±
         float angle;
-        // true°¡ ¿À¸¥ÂÊ
+        // trueê°€ ì˜¤ë¥¸ìª½
         if (ScreenDirection == true)
         {
-            // ¿À¸¥ÂÊ ¼½ÅÍ: 90µµ ¡¾ sectorAngleRange
+            // ì˜¤ë¥¸ìª½ ì„¹í„°: 90ë„ Â± sectorAngleRange
             angle = 90f + Random.Range(-sectorAngleRange, sectorAngleRange);
 
         }
         else
         {
-            // ¿ŞÂÊ ¼½ÅÍ: 270µµ ¡¾ sectorAngleRange
+            // ì™¼ìª½ ì„¹í„°: 270ë„ Â± sectorAngleRange
             angle = 270f + Random.Range(-sectorAngleRange, sectorAngleRange);
-            // °¢µµ¸¦ -180 ~ 180 ¹üÀ§·Î Á¶Á¤
+            // ê°ë„ë¥¼ -180 ~ 180 ë²”ìœ„ë¡œ ì¡°ì •
             if (angle > 360f) angle -= 360f;
         }
 
-        // ÃÖ¼Ò/ÃÖ´ë °Å¸® ³»¿¡¼­ ¹«ÀÛÀ§ °Å¸® ¼±ÅÃ
+        // ìµœì†Œ/ìµœëŒ€ ê±°ë¦¬ ë‚´ì—ì„œ ë¬´ì‘ìœ„ ê±°ë¦¬ ì„ íƒ
         float distance = Random.Range(minDistance, maxDistance);
 
-        // 2. È¸Àü ¹× À§Ä¡ °è»ê
+        // 2. íšŒì „ ë° ìœ„ì¹˜ ê³„ì‚°
 
-        // ÇÃ·¹ÀÌ¾îÀÇ ÇöÀç È¸Àü(Rotation)À» ±âÁØÀ¸·Î °¢µµ¸¦ Àû¿ëÇÕ´Ï´Ù.
+        // í”Œë ˆì´ì–´ì˜ í˜„ì¬ íšŒì „(Rotation)ì„ ê¸°ì¤€ìœ¼ë¡œ ê°ë„ë¥¼ ì ìš©í•©ë‹ˆë‹¤.
         Quaternion rotation = target.rotation * Quaternion.Euler(0, angle, 0);
 
-        // ÇÃ·¹ÀÌ¾î À§Ä¡·ÎºÎÅÍ ·£´ı °Å¸®¸¸Å­ ¶³¾îÁø À§Ä¡¸¦ °è»êÇÕ´Ï´Ù.
+        // í”Œë ˆì´ì–´ ìœ„ì¹˜ë¡œë¶€í„° ëœë¤ ê±°ë¦¬ë§Œí¼ ë–¨ì–´ì§„ ìœ„ì¹˜ë¥¼ ê³„ì‚°í•©ë‹ˆë‹¤.
         Vector3 direction = rotation * Vector3.forward;
         Vector3 horizontalPosition = target.position + direction * distance;
 
-        // ¼öÁ÷ ¿ÀÇÁ¼ÂÀ» ´õÇØ ÃÖÁ¾ ¸ñÇ¥ À§Ä¡¸¦ ¹İÈ¯ÇÕ´Ï´Ù.
+        // ìˆ˜ì§ ì˜¤í”„ì…‹ì„ ë”í•´ ìµœì¢… ëª©í‘œ ìœ„ì¹˜ë¥¼ ë°˜í™˜í•©ë‹ˆë‹¤.
         return horizontalPosition + Vector3.down * (0.5f + Random.Range(-1, 1));// + Vector3.up * (flightHeight + userheight);
     }
     public void ChangeTargetImmediately()
     {
-        // »õ·Î¿î ¸ñÇ¥ À§Ä¡¸¦ Áï½Ã °è»êÇÏ°í ¸ñÇ¥ °»½Å Å¸ÀÌ¸Ó¸¦ ÃÊ±âÈ­ÇÕ´Ï´Ù.
+        // ìƒˆë¡œìš´ ëª©í‘œ ìœ„ì¹˜ë¥¼ ì¦‰ì‹œ ê³„ì‚°í•˜ê³  ëª©í‘œ ê°±ì‹  íƒ€ì´ë¨¸ë¥¼ ì´ˆê¸°í™”í•©ë‹ˆë‹¤.
         currentTargetPosition = GetNewTargetPosition(ScreenRight);
         timer = targetChangeInterval;
     }*/
     /// <summary>
-    /// Ä«¸Ş¶óÀÇ ·ÎÄÃ °ø°£¿¡¼­ »õ·Î¿î ¸ñÇ¥ À§Ä¡¸¦ »ı¼ºÇÕ´Ï´Ù.
+    /// ì¹´ë©”ë¼ì˜ ë¡œì»¬ ê³µê°„ì—ì„œ ìƒˆë¡œìš´ ëª©í‘œ ìœ„ì¹˜ë¥¼ ìƒì„±í•©ë‹ˆë‹¤.
     /// </summary>
     private Vector3 GetNewLocalTargetPosition(bool ScreenDirection)
     {
-        // 1. ·£´ı °¢µµ ¹× °Å¸® »ı¼º
+        // 1. ëœë¤ ê°ë„ ë° ê±°ë¦¬ ìƒì„±
         float angle;
-        // true°¡ ¿À¸¥ÂÊ
+        // trueê°€ ì˜¤ë¥¸ìª½
         if (ScreenDirection == true)
         {
-            // ¿À¸¥ÂÊ ¼½ÅÍ: 90µµ ¡¾ sectorAngleRange
+            // ì˜¤ë¥¸ìª½ ì„¹í„°: 90ë„ Â± sectorAngleRange
             angle = 90f + Random.Range(-sectorAngleRange, sectorAngleRange);
 
         }
         else
         {
-            // ¿ŞÂÊ ¼½ÅÍ: 270µµ ¡¾ sectorAngleRange
+            // ì™¼ìª½ ì„¹í„°: 270ë„ Â± sectorAngleRange
             angle = 270f + Random.Range(-sectorAngleRange, sectorAngleRange);
-            // °¢µµ¸¦ -180 ~ 180 ¹üÀ§·Î Á¶Á¤
+            // ê°ë„ë¥¼ -180 ~ 180 ë²”ìœ„ë¡œ ì¡°ì •
             if (angle > 360f) angle -= 360f;
         }
 
         float distance = Random.Range(minDistance, maxDistance);
 
-        // 2. ¼öÁ÷ ³ôÀÌ ·£´ı »ı¼º (»õ·Î¿î ·ÎÁ÷!)
+        // 2. ìˆ˜ì§ ë†’ì´ ëœë¤ ìƒì„± (ìƒˆë¡œìš´ ë¡œì§!)
         float randomHeight = Random.Range(minFlightHeight, maxFlightHeight);
 
-        // 3. ·ÎÄÃ À§Ä¡ °è»ê
-        // Quaternion.Euler(0, angle, 0)Àº Ä«¸Ş¶óÀÇ ·ÎÄÃ YÃà(À§ÂÊ)À» ±âÁØÀ¸·Î È¸ÀüÇÕ´Ï´Ù.
+        // 3. ë¡œì»¬ ìœ„ì¹˜ ê³„ì‚°
+        // Quaternion.Euler(0, angle, 0)ì€ ì¹´ë©”ë¼ì˜ ë¡œì»¬ Yì¶•(ìœ„ìª½)ì„ ê¸°ì¤€ìœ¼ë¡œ íšŒì „í•©ë‹ˆë‹¤.
         Quaternion rotation = Quaternion.Euler(0, angle, 0);
 
-        // Ä«¸Ş¶óÀÇ ·ÎÄÃ forward ¹æÇâ(0, 0, 1)À» ±âÁØÀ¸·Î È¸Àü ¹× °Å¸®¸¦ Àû¿ëÇÕ´Ï´Ù.
+        // ì¹´ë©”ë¼ì˜ ë¡œì»¬ forward ë°©í–¥(0, 0, 1)ì„ ê¸°ì¤€ìœ¼ë¡œ íšŒì „ ë° ê±°ë¦¬ë¥¼ ì ìš©í•©ë‹ˆë‹¤.
         Vector3 horizontalDirection = rotation * Vector3.forward;
 
-        // ·ÎÄÃ XZ Æò¸é À§Ä¡ °è»ê
+        // ë¡œì»¬ XZ í‰ë©´ ìœ„ì¹˜ ê³„ì‚°
         Vector3 localXZPosition = horizontalDirection * distance;
 
-        // ¼öÁ÷ ¿ÀÇÁ¼ÂÀ» ´õÇØ ÃÖÁ¾ ·ÎÄÃ ¸ñÇ¥ À§Ä¡¸¦ ¹İÈ¯ÇÕ´Ï´Ù.
+        // ìˆ˜ì§ ì˜¤í”„ì…‹ì„ ë”í•´ ìµœì¢… ë¡œì»¬ ëª©í‘œ ìœ„ì¹˜ë¥¼ ë°˜í™˜í•©ë‹ˆë‹¤.
         return localXZPosition + Vector3.up * randomHeight;
     }
 
-    // --- EnemyHealth¿¡¼­ È£ÃâÇÏ´Â ÇÔ¼ö ¼öÁ¤ ---
+    // --- EnemyHealthì—ì„œ í˜¸ì¶œí•˜ëŠ” í•¨ìˆ˜ ìˆ˜ì • ---
     public void ChangeTargetImmediately()
     {
-        // ·ÎÄÃ ¸ñÇ¥ À§Ä¡¸¦ Áï½Ã »õ·Î¿î ·£´ı À§Ä¡·Î º¯°æÇÕ´Ï´Ù.
+        // ë¡œì»¬ ëª©í‘œ ìœ„ì¹˜ë¥¼ ì¦‰ì‹œ ìƒˆë¡œìš´ ëœë¤ ìœ„ì¹˜ë¡œ ë³€ê²½í•©ë‹ˆë‹¤.
         currentLocalTargetPosition = GetNewLocalTargetPosition(ScreenRight);
         timer = targetChangeInterval;
     }
