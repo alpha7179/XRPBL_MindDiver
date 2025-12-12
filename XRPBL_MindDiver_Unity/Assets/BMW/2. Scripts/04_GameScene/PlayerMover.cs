@@ -1,9 +1,12 @@
 using UnityEngine;
 using System.Collections;
+#if UNITY_EDITOR
+using UnityEditor; // 지즈모를 씬 뷰에서 더 예쁘게 그리기 위해 사용 (선택사항)
+#endif
 
 /// <summary>
 /// 물리 엔진 기반(Rigidbody Physics) 플레이어 이동 클래스
-/// 기능: 로지텍 휠/페달 + 관성 주행 + 버튼 매핑 + 포스 피드백 + [강화된 자동 재연결]
+/// 기능: 로지텍 휠/페달 + 관성 주행 + 버튼 매핑 + 포스 피드백 + [강화된 자동 재연결] + [시각적 디버그 지즈모]
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerMover : MonoBehaviour
@@ -72,7 +75,12 @@ public class PlayerMover : MonoBehaviour
 
         _rb.useGravity = false;
         _rb.constraints = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionY;
+        // Unity 6 or newer API check
+#if UNITY_6000_0_OR_NEWER
         _rb.linearDamping = coastingDrag;
+#else
+        _rb.drag = coastingDrag; // 구버전 호환용
+#endif
         _rb.mass = 1000f;
     }
 
@@ -188,8 +196,13 @@ public class PlayerMover : MonoBehaviour
     {
         if (!canMove) return;
 
+#if UNITY_6000_0_OR_NEWER
         if (_input.y < 0) _rb.linearDamping = brakingDrag;
         else _rb.linearDamping = coastingDrag;
+#else
+        if (_input.y < 0) _rb.drag = brakingDrag;
+        else _rb.drag = coastingDrag;
+#endif
 
         Vector3 force = Vector3.zero;
         if (_input.y > 0) force += transform.forward * _input.y * forwardForce;
@@ -198,10 +211,17 @@ public class PlayerMover : MonoBehaviour
 
         _rb.AddForce(force, ForceMode.Force);
 
+#if UNITY_6000_0_OR_NEWER
         if (_rb.linearVelocity.magnitude > maxSpeed)
         {
             _rb.linearVelocity = _rb.linearVelocity.normalized * maxSpeed;
         }
+#else
+        if (_rb.velocity.magnitude > maxSpeed)
+        {
+            _rb.velocity = _rb.velocity.normalized * maxSpeed;
+        }
+#endif
 
         ApplyBoundaryLimit();
     }
@@ -308,7 +328,11 @@ public class PlayerMover : MonoBehaviour
     {
         if (IngameUIManager.Instance == null) return;
 
+#if UNITY_6000_0_OR_NEWER
         Vector3 velocity = _rb.linearVelocity;
+#else
+        Vector3 velocity = _rb.velocity;
+#endif
         Vector3 localVel = transform.InverseTransformDirection(velocity);
 
         float sideThreshold = 2.0f;
@@ -358,7 +382,11 @@ public class PlayerMover : MonoBehaviour
 
             if (_rb != null)
             {
+#if UNITY_6000_0_OR_NEWER
                 _rb.linearVelocity = Vector3.zero;
+#else
+                _rb.velocity = Vector3.zero;
+#endif
                 _rb.angularVelocity = Vector3.zero;
             }
         }
@@ -366,14 +394,28 @@ public class PlayerMover : MonoBehaviour
 
     private void ApplyBoundaryLimit()
     {
-        if (_rb.position.x < -xLimit && _rb.linearVelocity.x < 0)
+#if UNITY_6000_0_OR_NEWER
+        float velX = _rb.linearVelocity.x;
+#else
+        float velX = _rb.velocity.x;
+#endif
+
+        if (_rb.position.x < -xLimit && velX < 0)
         {
+#if UNITY_6000_0_OR_NEWER
             Vector3 vel = _rb.linearVelocity; vel.x = 0; _rb.linearVelocity = vel;
+#else
+            Vector3 vel = _rb.velocity; vel.x = 0; _rb.velocity = vel;
+#endif
             _rb.position = new Vector3(-xLimit, _rb.position.y, _rb.position.z);
         }
-        else if (_rb.position.x > xLimit && _rb.linearVelocity.x > 0)
+        else if (_rb.position.x > xLimit && velX > 0)
         {
+#if UNITY_6000_0_OR_NEWER
             Vector3 vel = _rb.linearVelocity; vel.x = 0; _rb.linearVelocity = vel;
+#else
+            Vector3 vel = _rb.velocity; vel.x = 0; _rb.velocity = vel;
+#endif
             _rb.position = new Vector3(xLimit, _rb.position.y, _rb.position.z);
         }
     }
@@ -464,6 +506,104 @@ public class PlayerMover : MonoBehaviour
             if (DataManager.Instance != null) DataManager.Instance.TakeDamage(20);
             if (AudioManager.Instance != null) AudioManager.Instance.PlaySFX("ShieldHit");
             Destroy(other.gameObject);
+        }
+    }
+    #endregion
+
+    #region Debug & Gizmos (Requested Features)
+    private void OnDrawGizmos()
+    {
+        // 1. 좌우 이동 제한 표시 (항상 표시됨)
+        DrawMovementLimits();
+
+        // 2. 도달 가능 반경 표시 (선택되지 않아도 표시하고 싶다면 여기 주석 해제)
+        // DrawReachRadius(); 
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        // 도달 가능 반경은 오브젝트가 선택되었을 때만 표시 (화면 복잡도 감소)
+        DrawReachRadius();
+    }
+
+    /// <summary>
+    /// 좌우로 움직일 수 있는 범위를 녹색 라인으로 표시합니다.
+    /// </summary>
+    private void DrawMovementLimits()
+    {
+        Gizmos.color = Color.green;
+
+        // 월드 좌표 기준 X축 제한선 계산
+        // 차는 Z축으로 전진한다고 가정하고 길게 그려줍니다.
+        float lineLength = 100f; // 앞뒤로 표시할 길이
+        Vector3 center = transform.position;
+
+        Vector3 leftLimitStart = new Vector3(-xLimit, center.y, center.z - lineLength / 2);
+        Vector3 leftLimitEnd = new Vector3(-xLimit, center.y, center.z + lineLength);
+
+        Vector3 rightLimitStart = new Vector3(xLimit, center.y, center.z - lineLength / 2);
+        Vector3 rightLimitEnd = new Vector3(xLimit, center.y, center.z + lineLength);
+
+        Gizmos.DrawLine(leftLimitStart, leftLimitEnd);
+        Gizmos.DrawLine(rightLimitStart, rightLimitEnd);
+    }
+
+    /// <summary>
+    /// 1초(Red) ~ 3초(Blue) 도달 예상 반경을 그라데이션 원으로 표시합니다.
+    /// 
+    /// </summary>
+    private void DrawReachRadius()
+    {
+        if (!Application.isPlaying && maxSpeed <= 0) return; // 에디터 모드에서 maxSpeed가 0이면 그리지 않음
+
+        Vector3 center = transform.position;
+        float speed = maxSpeed;
+
+        // 런타임이면 실제 현재 속도를 반영할 수도 있지만, 
+        // "갈 수 있는 반경"을 묻는 것이므로 MaxSpeed 기준이 적합합니다.
+
+        int steps = 20; // 그라데이션 부드러움 정도
+        float minTime = 1.0f; // 빨간색 시작 시간 (1초)
+        float maxTime = 3.0f; // 파란색 끝 시간 (3초)
+
+        for (int i = 0; i <= steps; i++)
+        {
+            // 0 ~ 1 사이 진행률
+            float t = (float)i / steps;
+
+            // 시간 계산 (1초 ~ 3초)
+            float currentTime = Mathf.Lerp(minTime, maxTime, t);
+
+            // 색상 계산 (Red -> Blue)
+            Color currentColor = Color.Lerp(Color.red, Color.blue, t);
+
+            // 반경 계산 (거리 = 속도 * 시간)
+            float currentRadius = speed * currentTime;
+
+            Gizmos.color = currentColor;
+            DrawGizmoCircle(center, currentRadius);
+        }
+    }
+
+    /// <summary>
+    /// XZ 평면에 원을 그리는 헬퍼 함수
+    /// </summary>
+    private void DrawGizmoCircle(Vector3 center, float radius)
+    {
+        int segments = 36;
+        float angleStep = 360f / segments;
+
+        Vector3 prevPoint = center + new Vector3(radius, 0, 0);
+
+        for (int i = 1; i <= segments; i++)
+        {
+            float angle = i * angleStep * Mathf.Deg2Rad;
+            float x = Mathf.Cos(angle) * radius;
+            float z = Mathf.Sin(angle) * radius;
+
+            Vector3 nextPoint = center + new Vector3(x, 0, z);
+            Gizmos.DrawLine(prevPoint, nextPoint);
+            prevPoint = nextPoint;
         }
     }
     #endregion

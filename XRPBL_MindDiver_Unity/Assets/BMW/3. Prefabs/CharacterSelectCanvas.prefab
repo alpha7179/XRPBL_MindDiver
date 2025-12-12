@@ -300,7 +300,7 @@ VideoPlayer:
   m_TargetCameraAlpha: 1
   m_TargetCamera3DLayout: 0
   m_TargetCamera: {fileID: 0}
-  m_TargetTexture: {fileID: 8400000, guid: 62cdb95ed72445e40948543c88a7a7e0, type: 2}
+  m_TargetTexture: {fileID: 8400000, guid: 8ee4cf7d43463014d851f5cb95cf6a55, type: 2}
   m_TimeReference: 0
   m_TargetMaterialRenderer: {fileID: 0}
   m_TargetMaterialProperty: <noninit>
@@ -762,8 +762,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 34
+  m_fontSizeBase: 34
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -871,7 +871,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Texture: {fileID: 8400000, guid: 62cdb95ed72445e40948543c88a7a7e0, type: 2}
+  m_Texture: {fileID: 8400000, guid: 8ee4cf7d43463014d851f5cb95cf6a55, type: 2}
   m_UVRect:
     serializedVersion: 2
     x: 0
@@ -1047,8 +1047,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 34
+  m_fontSizeBase: 34
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -1139,7 +1139,7 @@ VideoPlayer:
   m_TargetCameraAlpha: 1
   m_TargetCamera3DLayout: 0
   m_TargetCamera: {fileID: 0}
-  m_TargetTexture: {fileID: 8400000, guid: 62cdb95ed72445e40948543c88a7a7e0, type: 2}
+  m_TargetTexture: {fileID: 8400000, guid: 67ae794d3ad2a8a4d970df443bba1bdc, type: 2}
   m_TimeReference: 0
   m_TargetMaterialRenderer: {fileID: 0}
   m_TargetMaterialProperty: <noninit>
@@ -1228,7 +1228,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Texture: {fileID: 8400000, guid: 62cdb95ed72445e40948543c88a7a7e0, type: 2}
+  m_Texture: {fileID: 8400000, guid: 67ae794d3ad2a8a4d970df443bba1bdc, type: 2}
   m_UVRect:
     serializedVersion: 2
     x: 0
@@ -1947,6 +1947,7 @@ MonoBehaviour:
   - {fileID: 32900000, guid: dc3b1445c9bdf6a45a8eda1757f81ebf, type: 3}
   - {fileID: 32900000, guid: dc3b1445c9bdf6a45a8eda1757f81ebf, type: 3}
   requiredHoldTime: 3
+  clickCooldown: 1
   FrontButtonText: {fileID: 7624357000790489771}
   LeftButtonText: {fileID: 3812749809935811722}
   RightButtonText: {fileID: 5881443050111823164}
@@ -1954,4 +1955,4 @@ MonoBehaviour:
   masterVolume: 0
   isSideDisplaySoundMute: 1
   isDebugMode: 1
-  enableSingleButtonDebug: 1
+  enableSingleButtonDebug: 0

@@ -18,9 +18,9 @@ public class GamePhaseManager : MonoBehaviour
 
     [Header("Phase Settings")]
     // 1페이즈 제한 시간
-    public float phase1Duration = 1000f;
+    public float phase1Duration = 300f;
     // 2페이즈 제한 시간
-    public float phase2Duration = 110f;
+    public float phase2Duration = 300f;
 
     [Header("Phase 2 Conditions")]
     // 2페이즈 목표 처치 수

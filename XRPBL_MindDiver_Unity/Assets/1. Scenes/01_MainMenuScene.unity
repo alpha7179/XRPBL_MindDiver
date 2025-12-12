@@ -658,7 +658,7 @@ PrefabInstance:
     - target: {fileID: 306860498368456320, guid: 883f671825e08e24f8a62ddf509ea597,
         type: 3}
       propertyPath: currentPlayState
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1448566587122566905, guid: 883f671825e08e24f8a62ddf509ea597,
         type: 3}

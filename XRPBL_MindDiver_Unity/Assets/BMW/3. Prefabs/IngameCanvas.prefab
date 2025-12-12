@@ -8677,8 +8677,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278190232
-  m_fontColor: {r: 0.59607846, g: 0, b: 0, a: 1}
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -17983,7 +17983,7 @@ MonoBehaviour:
   leftVideoPlayer: {fileID: 8278061410720217930}
   rightVideoPlayer: {fileID: 3851907442477005060}
   frontRawImage: {fileID: 8794008507857273843}
-  leftRawImage: {fileID: 8794008507857273843}
+  leftRawImage: {fileID: 8487911570281123789}
   rightRawImage: {fileID: 7129042894951690169}
   videoPlaybackSpeed: 2
   panelFadeDuration: 0.1
@@ -18233,10 +18233,10 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 7000
+  far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 1000
+  orthographic size: 100
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2

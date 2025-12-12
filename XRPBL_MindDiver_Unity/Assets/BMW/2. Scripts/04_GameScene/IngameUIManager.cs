@@ -76,7 +76,7 @@ public class IngameUIManager : MonoBehaviour
 
     [Tooltip("비디오 재생 속도 (1.0 = 정배속, 2.0 = 2배속)")]
     [Range(0.1f, 5.0f)]
-    [SerializeField] public float videoPlaybackSpeed = 1.0f; // [New] 영상 속도 조절 변수
+    [SerializeField] public float videoPlaybackSpeed = 1.0f;
     #endregion
 
     #region Inspector Fields - Settings
@@ -274,6 +274,11 @@ public class IngameUIManager : MonoBehaviour
             if (leftRawImage) leftRawImage.gameObject.SetActive(true);
             if (rightRawImage) rightRawImage.gameObject.SetActive(true);
 
+            // [추가됨] 비디오 플레이어 오브젝트도 확실하게 켜줌
+            if (frontVideoPlayer) frontVideoPlayer.gameObject.SetActive(true);
+            if (leftVideoPlayer) leftVideoPlayer.gameObject.SetActive(true);
+            if (rightVideoPlayer) rightVideoPlayer.gameObject.SetActive(true);
+
             HideAllCharacterImages();
         }
         else // 이미지 모드라면 RawImage를 끄고 로직 시작
@@ -351,10 +356,10 @@ public class IngameUIManager : MonoBehaviour
         // 2. 반복 재생 여부 결정 (1번=데미지는 반복 X, 나머지는 O)
         bool isLooping = (index != 1);
 
-        // 3. 영상 재생
-        PlayVideo(frontVideoPlayer, frontClip, isLooping);
-        PlayVideo(leftVideoPlayer, leftClip, isLooping);
-        PlayVideo(rightVideoPlayer, rightClip, isLooping);
+        // 3. 영상 재생 (RawImage를 함께 전달하여 텍스처 연결 보장)
+        PlayVideo(frontVideoPlayer, frontRawImage, frontClip, isLooping);
+        PlayVideo(leftVideoPlayer, leftRawImage, leftClip, isLooping);
+        PlayVideo(rightVideoPlayer, rightRawImage, rightClip, isLooping);
 
         // 4. 데미지(1번)인 경우 영상 길이만큼 대기 후 0번(기본)으로 복귀
         if (index == 1 && frontClip != null)
@@ -365,17 +370,48 @@ public class IngameUIManager : MonoBehaviour
         }
     }
 
-    private void PlayVideo(VideoPlayer player, VideoClip clip, bool loop)
+    /// <summary>
+    /// [수정됨] 비디오 플레이어를 안전하게 준비하고 재생하는 함수
+    /// RawImage와의 연결이 끊기는 문제를 해결하기 위해 코루틴을 사용합니다.
+    /// </summary>
+    private void PlayVideo(VideoPlayer player, RawImage targetImage, VideoClip clip, bool loop)
     {
         if (player == null || clip == null) return;
 
+        // 활성화 보장
+        player.gameObject.SetActive(true);
+        if (targetImage != null) targetImage.gameObject.SetActive(true);
+
+        // 설정 적용
         player.source = VideoSource.VideoClip;
         player.clip = clip;
         player.isLooping = loop;
-
-        // [New] 재생 속도 설정
         player.playbackSpeed = videoPlaybackSpeed;
 
+        // 준비 및 재생 코루틴 시작 (기존 코루틴 멈출 필요 없이 VideoPlayer 내부에서 처리됨)
+        // 하지만 안전을 위해 별도 코루틴에서 순차 처리
+        StartCoroutine(PrepareAndPlayRoutine(player, targetImage));
+    }
+
+    private IEnumerator PrepareAndPlayRoutine(VideoPlayer player, RawImage targetImage)
+    {
+        // 준비 시작
+        player.Prepare();
+
+        // 준비가 완료될 때까지 대기
+        while (!player.isPrepared)
+        {
+            yield return null;
+        }
+
+        // 준비 완료 후 텍스처 연결 (API Only 모드 등에서 필수)
+        if (targetImage != null)
+        {
+            targetImage.texture = player.texture;
+            targetImage.color = Color.white; // 혹시라도 알파값이 0이면 안보이므로
+        }
+
+        // 재생 시작
         player.Play();
     }
 
@@ -515,7 +551,7 @@ public class IngameUIManager : MonoBehaviour
         }
     }
 
-    private void InitializeSliders()
+    public void InitializeSliders()
     {
         foreach (var sliders in HPSliders) if (sliders) { sliders.minValue = 0; sliders.maxValue = 100; sliders.wholeNumbers = true; }
         foreach (var sliders in ShieldSliders) if (sliders) { sliders.minValue = 0; sliders.maxValue = 100; sliders.wholeNumbers = true; }

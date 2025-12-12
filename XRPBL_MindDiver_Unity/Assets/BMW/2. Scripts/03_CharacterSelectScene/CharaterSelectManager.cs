@@ -5,7 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// 캐릭터 선택 화면 매니저 (수정됨: 토글 방식 + 3초 대기)
+/// 캐릭터 선택 화면 매니저 (수정됨: 토글 방식 + 3초 대기 + 연속 클릭 방지)
 /// </summary>
 public class CharaterSelectManager : MonoBehaviour
 {
@@ -22,6 +22,10 @@ public class CharaterSelectManager : MonoBehaviour
     [Header("Settings")]
     [Tooltip("모두 활성화 된 후 대기해야 하는 시간 (초)")]
     [SerializeField] private float requiredHoldTime = 3.0f;
+
+    [Header("Input Settings (New)")]
+    [Tooltip("버튼 연속 클릭 방지를 위한 쿨타임 (초)")]
+    [SerializeField] private float clickCooldown = 1.0f;
 
     [Header("Text 구성요소")]
     // 정면 버튼 텍스트 오브젝트
@@ -61,6 +65,9 @@ public class CharaterSelectManager : MonoBehaviour
     private float currentHoldTimer = 0f;
     // 비디오 재생 시작 여부 확인
     private bool isVideoPlayed = false;
+
+    // [추가됨] 마지막으로 클릭 입력이 들어온 시간
+    private float lastClickTime = -99f;
     #endregion
 
     #region Unity Lifecycle
@@ -68,7 +75,7 @@ public class CharaterSelectManager : MonoBehaviour
     {
         foreach (var video in VideoPanels) if (video) video.SetActive(false);
 
-        // 데이터 매니저 연동 (없으면 기본값 사용을 위해 try-catch 혹은 null 체크 권장하지만 기존 코드 유지)
+        // 데이터 매니저 연동
         if (DataManager.Instance != null)
             masterVolume = ((float)DataManager.Instance.GetVideoVolume()) / 100;
 
@@ -213,17 +220,12 @@ public class CharaterSelectManager : MonoBehaviour
     #endregion
 
     #region UI Event Handlers
-    // ---------------------------------------------------------
-    //  UI 이벤트 연결 함수 (토글 방식으로 변경됨)
-    // ---------------------------------------------------------
 
-    // [중요] EventTrigger의 Pointer Down에 연결하세요.
+    // EventTrigger의 Pointer Down에 연결하세요.
     public void OnPointerDownFront() { ToggleButtonState(0, FrontButtonText); }
     public void OnPointerDownLeft() { ToggleButtonState(1, LeftButtonText); }
     public void OnPointerDownRight() { ToggleButtonState(2, RightButtonText); }
 
-    // [중요] 기존 설정 유지를 위해 남겨두었으나, 토글 방식이므로 뗐을 때(Up) 상태를 끄지 않습니다.
-    // EventTrigger에서 Pointer Up 이벤트를 제거하셔도 되고, 연결해 두셔도 무방합니다.
     public void OnPointerUpFront() { /* Do Nothing */ }
     public void OnPointerUpLeft() { /* Do Nothing */ }
     public void OnPointerUpRight() { /* Do Nothing */ }
@@ -234,10 +236,21 @@ public class CharaterSelectManager : MonoBehaviour
      */
     private void ToggleButtonState(int index, GameObject textObj)
     {
-        // 이미 비디오가 시작되었으면 입력 무시
+        // 1. 이미 비디오가 시작되었으면 입력 무시
         if (isVideoPlayed) return;
 
-        // 상태 반전 (True -> False, False -> True)
+        // 2. 쿨타임 체크 (연속 클릭 방지)
+        // 현재 시간 - 마지막 클릭 시간이 쿨타임보다 작으면 함수 종료
+        if (Time.time - lastClickTime < clickCooldown)
+        {
+            Log($"[Input Ignored] Clicked too fast. (Cooldown: {clickCooldown}s)");
+            return;
+        }
+
+        // 3. 유효한 입력이므로 마지막 클릭 시간 갱신
+        lastClickTime = Time.time;
+
+        // 4. 상태 반전 (True -> False, False -> True)
         isButtonActive[index] = !isButtonActive[index];
         bool isActive = isButtonActive[index];
 
@@ -290,7 +303,7 @@ public class CharaterSelectManager : MonoBehaviour
         if (show)
         {
             panel.SetActive(true);
-            // 이미 알파가 목표치와 비슷하면 깜빡임 방지를 위해 0으로 초기화하지 않음 (필요 시 수정)
+            // 이미 알파가 목표치와 비슷하면 깜빡임 방지를 위해 0으로 초기화하지 않음
             if (startAlpha == 1.0f && show) { /* 이미 보여짐 */ }
             else if (startAlpha == 0.0f && !show) { /* 이미 숨겨짐 */ }
         }

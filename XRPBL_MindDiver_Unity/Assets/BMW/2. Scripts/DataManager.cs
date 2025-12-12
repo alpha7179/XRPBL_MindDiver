@@ -1,5 +1,4 @@
 using System;
-using UnityEditor;
 using UnityEngine;
 
 /// <summary>
@@ -140,19 +139,15 @@ public class DataManager : MonoBehaviour
     }
     public void InitializeGameData()
     {
+        IngameUIManager.Instance.InitializeSliders();
+        
         SetProgress(0);
         SetScore(0);
-        if(IngameUIManager.Instance != null) IngameUIManager.Instance.UpdateScore(0);
         SetShipHealth(maxShipHealth);
-        if (IngameUIManager.Instance != null) IngameUIManager.Instance.UpdateHP(maxShipHealth);
         SetShipShield(maxShipShield);
-        if (IngameUIManager.Instance != null) IngameUIManager.Instance.UpdateHP(maxShipShield);
         SetBuffer(0);
-        if (IngameUIManager.Instance != null) IngameUIManager.Instance.UpdateBuff(0);
         SetDeBuffer(0);
-        if (IngameUIManager.Instance != null) IngameUIManager.Instance.UpdateDeBuff(0);
         SetBullet(maxBullet);
-        if (IngameUIManager.Instance != null) IngameUIManager.Instance.UpdateBullet(maxBullet);
         SetIncrementKillCount(0);
         SetTotalDamageTaken(0);
         SetTotalPlayTime(0);
@@ -244,7 +239,7 @@ public class DataManager : MonoBehaviour
     * 버퍼 게이지 충전
     */
     public void AddBuffer(int amount) { bufferCharge = Mathf.Min(bufferCharge + amount, maxCharge); IngameUIManager.Instance.UpdateBuff(bufferCharge); }
-    public int GetBuffer() { return debufferCharge; }
+    public int GetBuffer() { return bufferCharge; }
     public void SetBuffer(int value) { bufferCharge = value; IngameUIManager.Instance.UpdateBuff(bufferCharge); }
 
     /*
