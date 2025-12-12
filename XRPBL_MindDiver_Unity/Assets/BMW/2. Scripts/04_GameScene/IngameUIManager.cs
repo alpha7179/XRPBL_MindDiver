@@ -115,7 +115,7 @@ public class IngameUIManager : MonoBehaviour
     [SerializeField] private bool isDebugMode = true;
     #endregion
 
-    #region Private Fields
+    #region Private Fields - Logic
     private OuttroUIManager outtroUIManager;
     private int currentHealth;
     private int maxHealth;
@@ -140,6 +140,22 @@ public class IngameUIManager : MonoBehaviour
     private Dictionary<GameObject, Coroutine> panelCoroutines = new Dictionary<GameObject, Coroutine>();
     #endregion
 
+    #region Private Fields - Seamless Video
+    // 끊김 없는 재생을 위한 채널 클래스 정의
+    private class SeamlessVideoChannel
+    {
+        public VideoPlayer playerA; // 메인
+        public VideoPlayer playerB; // 백버퍼 (대기용)
+        public RawImage displayImage;
+        public Coroutine transitionRoutine;
+        public bool isUsingA = true; // 현재 A를 보고 있는지 여부
+    }
+
+    private SeamlessVideoChannel frontChannel;
+    private SeamlessVideoChannel leftChannel;
+    private SeamlessVideoChannel rightChannel;
+    #endregion
+
     #region Unity Lifecycle
     private void Start()
     {
@@ -158,6 +174,14 @@ public class IngameUIManager : MonoBehaviour
 
         // 초기 모드 설정 (이미지 vs 비디오 화면 정리)
         InitializeCharacterDisplayMode();
+
+        // [중요] 비디오 채널 초기화 (더블 버퍼링 준비)
+        if (useVideoMode)
+        {
+            frontChannel = InitializeVideoChannel(frontVideoPlayer, frontRawImage);
+            leftChannel = InitializeVideoChannel(leftVideoPlayer, leftRawImage);
+            rightChannel = InitializeVideoChannel(rightVideoPlayer, rightRawImage);
+        }
 
         // [중요] 캐릭터 초기화 (기본 상태: 0번) - 시작하자마자 기본 영상 재생
         SetCharacterState(0);
@@ -267,21 +291,19 @@ public class IngameUIManager : MonoBehaviour
     // 모드에 따라 UI 오브젝트 활성/비활성 초기화
     private void InitializeCharacterDisplayMode()
     {
-        // 비디오 모드라면 RawImage를 켜고, Image 리스트의 모든 오브젝트를 끔
         if (useVideoMode)
         {
             if (frontRawImage) frontRawImage.gameObject.SetActive(true);
             if (leftRawImage) leftRawImage.gameObject.SetActive(true);
             if (rightRawImage) rightRawImage.gameObject.SetActive(true);
 
-            // [추가됨] 비디오 플레이어 오브젝트도 확실하게 켜줌
             if (frontVideoPlayer) frontVideoPlayer.gameObject.SetActive(true);
             if (leftVideoPlayer) leftVideoPlayer.gameObject.SetActive(true);
             if (rightVideoPlayer) rightVideoPlayer.gameObject.SetActive(true);
 
             HideAllCharacterImages();
         }
-        else // 이미지 모드라면 RawImage를 끄고 로직 시작
+        else
         {
             if (frontRawImage) frontRawImage.gameObject.SetActive(false);
             if (leftRawImage) leftRawImage.gameObject.SetActive(false);
@@ -289,7 +311,7 @@ public class IngameUIManager : MonoBehaviour
         }
     }
 
-    // 데미지 효과 발동 (공통 진입점)
+    // 데미지 효과 발동
     private void TriggerDamageEffect()
     {
         isHitEffectActive = true;
@@ -299,10 +321,9 @@ public class IngameUIManager : MonoBehaviour
         SetCharacterState(1);
     }
 
-    // 캐릭터 상태 변경 통합 함수
     public void SetCharacterState(int index)
     {
-        // 기존 코루틴이 있다면 중지 (피격 대기 중 상태 변경 시)
+        // 기존 코루틴(데미지 복귀 등) 중지
         if (characterResetRoutine != null) StopCoroutine(characterResetRoutine);
 
         if (useVideoMode)
@@ -322,7 +343,6 @@ public class IngameUIManager : MonoBehaviour
         UpdateImageList(CharacterLeftImage, index);
         UpdateImageList(CharacterRightImage, index);
 
-        // 데미지(1번)인 경우 일정 시간 후 복귀
         if (index == 1)
         {
             characterResetRoutine = StartCoroutine(ResetCharacterStateRoutine(damageImageDuration));
@@ -345,100 +365,158 @@ public class IngameUIManager : MonoBehaviour
         foreach (var img in CharacterRightImage) if (img) img.gameObject.SetActive(false);
     }
 
-    // [비디오 모드] 처리 로직
+    #endregion
+
+    #region Seamless Video Logic (Double Buffering)
+
+    /// <summary>
+    /// 기존 VideoPlayer를 기반으로 백버퍼용 Player를 하나 더 생성하여 채널을 구성합니다.
+    /// </summary>
+    private SeamlessVideoChannel InitializeVideoChannel(VideoPlayer originalPlayer, RawImage targetImage)
+    {
+        if (originalPlayer == null || targetImage == null) return null;
+
+        SeamlessVideoChannel channel = new SeamlessVideoChannel();
+        channel.playerA = originalPlayer;
+        channel.displayImage = targetImage;
+
+        // Player B (백버퍼) 생성: Player A의 설정을 복사
+        GameObject ghostObj = new GameObject(originalPlayer.name + "_Ghost");
+        ghostObj.transform.SetParent(originalPlayer.transform.parent);
+        ghostObj.transform.localPosition = originalPlayer.transform.localPosition;
+        ghostObj.transform.localRotation = originalPlayer.transform.localRotation;
+        ghostObj.transform.localScale = originalPlayer.transform.localScale;
+
+        VideoPlayer ghostPlayer = ghostObj.AddComponent<VideoPlayer>();
+        ghostPlayer.playOnAwake = false;
+        ghostPlayer.waitForFirstFrame = true; // 중요: 첫 프레임 준비될 때까지 대기
+        ghostPlayer.isLooping = originalPlayer.isLooping;
+        ghostPlayer.source = VideoSource.VideoClip;
+        ghostPlayer.audioOutputMode = originalPlayer.audioOutputMode;
+
+        // 원본과 동일한 렌더모드 설정
+        // [수정] VideoPlayer.RenderMode가 아니라 VideoRenderMode를 사용해야 합니다.
+        channel.playerA.renderMode = VideoRenderMode.APIOnly;
+        ghostPlayer.renderMode = VideoRenderMode.APIOnly;
+
+        // RT 연결 해제 (APIOnly에서는 targetTexture가 null이어야 안전)
+        channel.playerA.targetTexture = null;
+        ghostPlayer.targetTexture = null;
+
+        channel.playerB = ghostPlayer;
+        channel.isUsingA = true; // 처음엔 A 사용 가정
+
+        return channel;
+    }
+
     private void UpdateCharacterVideo(int index)
     {
-        // 1. 영상 클립 가져오기 (범위 체크)
         VideoClip frontClip = (index < CharacterFrontVideo.Count) ? CharacterFrontVideo[index] : null;
         VideoClip leftClip = (index < CharacterLeftVideo.Count) ? CharacterLeftVideo[index] : null;
         VideoClip rightClip = (index < CharacterRightVideo.Count) ? CharacterRightVideo[index] : null;
 
-        // 2. 반복 재생 여부 결정 (1번=데미지는 반복 X, 나머지는 O)
-        bool isLooping = (index != 1);
+        bool isLooping = (index != 1); // 데미지는 반복 X
 
-        // 3. 영상 재생 (RawImage를 함께 전달하여 텍스처 연결 보장)
-        PlayVideo(frontVideoPlayer, frontRawImage, frontClip, isLooping);
-        PlayVideo(leftVideoPlayer, leftRawImage, leftClip, isLooping);
-        PlayVideo(rightVideoPlayer, rightRawImage, rightClip, isLooping);
+        // 각 채널별로 끊김 없는 전환 시작
+        PlaySeamless(frontChannel, frontClip, isLooping);
+        PlaySeamless(leftChannel, leftClip, isLooping);
+        PlaySeamless(rightChannel, rightClip, isLooping);
 
-        // 4. 데미지(1번)인 경우 영상 길이만큼 대기 후 0번(기본)으로 복귀
+        // 데미지(1번) 복귀 로직
         if (index == 1 && frontClip != null)
         {
-            // 전면 영상 길이를 기준으로 대기 (셋 다 비슷하다고 가정, 속도 고려하여 시간 계산)
             float waitTime = (float)frontClip.length / videoPlaybackSpeed;
             characterResetRoutine = StartCoroutine(ResetCharacterStateRoutine(waitTime));
         }
     }
 
-    /// <summary>
-    /// [수정됨] 비디오 플레이어를 안전하게 준비하고 재생하는 함수
-    /// RawImage와의 연결이 끊기는 문제를 해결하기 위해 코루틴을 사용합니다.
-    /// </summary>
-    private void PlayVideo(VideoPlayer player, RawImage targetImage, VideoClip clip, bool loop)
+    private void PlaySeamless(SeamlessVideoChannel channel, VideoClip clip, bool loop)
     {
-        if (player == null || clip == null) return;
+        if (channel == null || clip == null) return;
 
-        // 활성화 보장
-        player.gameObject.SetActive(true);
-        if (targetImage != null) targetImage.gameObject.SetActive(true);
+        // 이미 전환 중이라면 이전 작업 중지
+        if (channel.transitionRoutine != null) StopCoroutine(channel.transitionRoutine);
 
-        // 설정 적용
-        player.source = VideoSource.VideoClip;
-        player.clip = clip;
-        player.isLooping = loop;
-        player.playbackSpeed = videoPlaybackSpeed;
-
-        // 준비 및 재생 코루틴 시작 (기존 코루틴 멈출 필요 없이 VideoPlayer 내부에서 처리됨)
-        // 하지만 안전을 위해 별도 코루틴에서 순차 처리
-        StartCoroutine(PrepareAndPlayRoutine(player, targetImage));
+        // 끊김 없는 전환 코루틴 시작
+        channel.transitionRoutine = StartCoroutine(SeamlessSwitchRoutine(channel, clip, loop));
     }
 
-    private IEnumerator PrepareAndPlayRoutine(VideoPlayer player, RawImage targetImage)
+    private IEnumerator SeamlessSwitchRoutine(SeamlessVideoChannel channel, VideoClip nextClip, bool loop)
     {
-        // 준비 시작
-        player.Prepare();
+        // 1. 현재 사용하지 않는(백그라운드) 플레이어 선택
+        VideoPlayer activePlayer = channel.isUsingA ? channel.playerA : channel.playerB;
+        VideoPlayer backPlayer = channel.isUsingA ? channel.playerB : channel.playerA;
 
-        // 준비가 완료될 때까지 대기
-        while (!player.isPrepared)
+        // 2. 백그라운드 플레이어 설정 및 준비
+        backPlayer.gameObject.SetActive(true);
+        backPlayer.source = VideoSource.VideoClip;
+        backPlayer.clip = nextClip;
+        backPlayer.isLooping = loop;
+        backPlayer.playbackSpeed = videoPlaybackSpeed;
+
+        backPlayer.Prepare();
+
+        // 3. 준비 완료될 때까지 대기 (이 동안 앞쪽 activePlayer는 계속 재생 중이므로 끊김 없음)
+        while (!backPlayer.isPrepared)
         {
             yield return null;
         }
 
-        // 준비 완료 후 텍스처 연결 (API Only 모드 등에서 필수)
-        if (targetImage != null)
+        // 4. 준비 완료 -> 텍스처 교체 및 재생
+        // RawImage의 텍스처를 백그라운드 플레이어의 텍스처로 순간 교체
+        if (channel.displayImage != null)
         {
-            targetImage.texture = player.texture;
-            targetImage.color = Color.white; // 혹시라도 알파값이 0이면 안보이므로
+            channel.displayImage.texture = backPlayer.texture;
+            channel.displayImage.color = Color.white;
         }
 
-        // 재생 시작
-        player.Play();
+        backPlayer.Play();
+
+        // 5. 기존 플레이어 정지 및 상태 스왑
+        // 약간의 딜레이를 주어 새 영상이 확실히 렌더링 된 후 끄면 더 안전함
+        yield return null;
+
+        activePlayer.Stop();
+        activePlayer.gameObject.SetActive(false); // 성능 위해 끄기
+
+        // 플래그 반전 (이제 backPlayer가 active가 됨)
+        channel.isUsingA = !channel.isUsingA;
+        channel.transitionRoutine = null;
     }
 
-    // 비디오 일시정지 유틸
     private void PauseAllVideos()
     {
-        if (frontVideoPlayer) frontVideoPlayer.Pause();
-        if (leftVideoPlayer) leftVideoPlayer.Pause();
-        if (rightVideoPlayer) rightVideoPlayer.Pause();
+        if (frontChannel != null) PauseChannel(frontChannel);
+        if (leftChannel != null) PauseChannel(leftChannel);
+        if (rightChannel != null) PauseChannel(rightChannel);
     }
-    private void ResumeAllVideos()
+    private void PauseChannel(SeamlessVideoChannel channel)
     {
-        if (frontVideoPlayer) frontVideoPlayer.Play();
-        if (leftVideoPlayer) leftVideoPlayer.Play();
-        if (rightVideoPlayer) rightVideoPlayer.Play();
+        if (channel.playerA.isPlaying) channel.playerA.Pause();
+        if (channel.playerB.isPlaying) channel.playerB.Pause();
     }
 
-    // 상태 복귀 코루틴 (이미지/영상 공용)
+    private void ResumeAllVideos()
+    {
+        if (frontChannel != null) ResumeChannel(frontChannel);
+        if (leftChannel != null) ResumeChannel(leftChannel);
+        if (rightChannel != null) ResumeChannel(rightChannel);
+    }
+    private void ResumeChannel(SeamlessVideoChannel channel)
+    {
+        // 현재 활성화된(보여지고 있는) 플레이어만 재생
+        if (channel.isUsingA) channel.playerA.Play();
+        else channel.playerB.Play();
+    }
+
+    // 상태 복귀 코루틴
     private IEnumerator ResetCharacterStateRoutine(float delay)
     {
         yield return new WaitForSeconds(delay);
 
-        // 체력이 남아있고, 아직 데미지 효과 중이라면 기본 상태로 복귀
-        // (죽었거나 게임이 끝났으면 복귀 안 함)
         if (currentHealth > 0 && GameManager.Instance.currentState == GameManager.GameState.GameStage)
         {
-            SetCharacterState(0); // 0: Default
+            SetCharacterState(0);
         }
     }
 

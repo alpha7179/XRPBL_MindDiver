@@ -1,12 +1,12 @@
 using UnityEngine;
 using System.Collections;
 #if UNITY_EDITOR
-using UnityEditor; // 지즈모를 씬 뷰에서 더 예쁘게 그리기 위해 사용 (선택사항)
+using UnityEditor;
 #endif
 
 /// <summary>
 /// 물리 엔진 기반(Rigidbody Physics) 플레이어 이동 클래스
-/// 기능: 로지텍 휠/페달 + 관성 주행 + 버튼 매핑 + 포스 피드백 + [강화된 자동 재연결] + [시각적 디버그 지즈모]
+/// 수정사항: 화살표 상태 초기화 로직 강화 (입력 없으면 즉시 소멸 보장)
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerMover : MonoBehaviour
@@ -37,8 +37,11 @@ public class PlayerMover : MonoBehaviour
     [Range(0, 100)][SerializeField] private int centeringSpringStrength = 50;
     [Range(0, 100)][SerializeField] private int damperStrength = 30;
 
-    [Header("UI Settings")]
-    [SerializeField] private float uiKeepTime = 2.0f;
+    [Header("UI Trigger Settings")]
+    [Tooltip("휠 사용 시 화살표가 뜨는 조향각 임계값 (0.0 ~ 1.0)")]
+    [SerializeField] private float wheelSteerThreshold = 0.15f;
+    [Tooltip("페달 사용 시 화살표가 뜨는 엑셀 임계값 (0.0 ~ 1.0)")]
+    [SerializeField] private float pedalAccelThreshold = 0.1f;
 
     [Header("References")]
     [SerializeField] private GameObject shieldEffect;
@@ -53,14 +56,13 @@ public class PlayerMover : MonoBehaviour
     private bool _isWheelConnected = false;
     private LogitechGSDK.DIJOYSTATE2ENGINES _currentState;
 
-    // 버튼 상태 및 UI
+    // 버튼 상태
     private bool[] _prevButtonStates = new bool[128];
+
+    // [UI 상태] -1: 꺼짐, 1: 전진, 2: 왼쪽, 3: 오른쪽
     private int _currentUiState = -1;
-    private float _uiTimer = 0f;
 
-    // [추가됨] 코루틴 중복 실행 방지용 변수
     private Coroutine _initCoroutine;
-
     private OuttroUIManager outtroUIManager;
     #endregion
 
@@ -75,11 +77,11 @@ public class PlayerMover : MonoBehaviour
 
         _rb.useGravity = false;
         _rb.constraints = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionY;
-        // Unity 6 or newer API check
+
 #if UNITY_6000_0_OR_NEWER
         _rb.linearDamping = coastingDrag;
 #else
-        _rb.drag = coastingDrag; // 구버전 호환용
+        _rb.drag = coastingDrag;
 #endif
         _rb.mass = 1000f;
     }
@@ -94,63 +96,49 @@ public class PlayerMover : MonoBehaviour
 
     private void OnApplicationFocus(bool focus)
     {
-        // 앱으로 돌아왔는데 연결이 끊겨있으면 재시도
         if (focus && useLogitechWheel && !_isWheelInitialized)
         {
             StartConnectionSequence();
         }
     }
+
     private void StartConnectionSequence()
     {
-        // 이미 돌고 있는 연결 시도가 있다면 중단하고 새로 시작 (중복 방지)
         if (_initCoroutine != null) StopCoroutine(_initCoroutine);
         _initCoroutine = StartCoroutine(InitializeLogitechSDK());
     }
+
     private IEnumerator InitializeLogitechSDK()
     {
-        // 이미 연결된 상태면 패스
         if (_isWheelInitialized && LogitechGSDK.LogiIsConnected(0)) yield break;
 
         Debug.Log("[PlayerMover] 로지텍 SDK 연결 시도 중...");
 
         while (!_isWheelInitialized)
         {
-            // 1. 혹시 꼬여있을지 모르니 셧다운 먼저 호출 (초기화 실패 시 리셋 효과)
             LogitechGSDK.LogiSteeringShutdown();
-
-            // 아주 잠깐 대기
             yield return null;
 
-            // 2. 초기화 시도
             bool initResult = LogitechGSDK.LogiSteeringInitialize(false);
-
-            // 3. 초기화가 됐다면 업데이트 한 번 돌려서 실제 연결 확인
             bool connectedResult = false;
+
             if (initResult)
             {
-                // 업데이트를 한번 해줘야 IsConnected가 갱신되는 경우가 있음
                 LogitechGSDK.LogiUpdate();
                 connectedResult = LogitechGSDK.LogiIsConnected(0);
             }
 
-            // 4. 최종 성공 판단
             if (initResult && connectedResult)
             {
                 _isWheelInitialized = true;
                 _isWheelConnected = true;
                 Debug.Log("<color=green>[PlayerMover] 로지텍 SDK 초기화 및 연결 성공!</color>");
-
-                // 성공 직후 포스 피드백 적용
                 HandleForceFeedback();
-
-                // 코루틴 변수 해제
                 _initCoroutine = null;
-                yield break; // 루프 종료
+                yield break;
             }
             else
             {
-                // 실패 시 경고 출력 후 2초 대기
-                // Debug.LogWarning("[PlayerMover] 연결 실패. 2초 후 재시도...)");
                 yield return new WaitForSeconds(2f);
             }
         }
@@ -160,31 +148,26 @@ public class PlayerMover : MonoBehaviour
     {
         CheckGameOver();
 
-        // 1. SDK 업데이트 및 상태 체크
         UpdateLogitechState();
         HandleForceFeedback();
 
-        // 2. 이동 불가 처리
         if (!canMove)
         {
-            _input = Vector2.zero;
-            if (_currentUiState != -1)
-            {
-                _currentUiState = -1;
-                if (IngameUIManager.Instance != null) IngameUIManager.Instance.CloseArrowPanel();
-            }
-            _uiTimer = 0f;
+            ResetMovementAndUI();
             UpdatePrevButtonStates();
             return;
         }
 
-        // 3. 입력 통합
         float h = GetCombinedHorizontalInput();
         float v = GetCombinedVerticalInput();
         _input = new Vector2(h, v);
 
-        // 4. UI 및 스킬 입력
-        HandleDirectionUI_PositionBased();
+        // UI 화살표 로직
+        if (_isWheelConnected)
+            HandleDirectionUI_Wheel();
+        else
+            HandleDirectionUI_Keyboard();
+
         HandleSkillInput();
 
         if (Input.GetKeyDown(KeyCode.Space)) ActivateShield();
@@ -213,14 +196,10 @@ public class PlayerMover : MonoBehaviour
 
 #if UNITY_6000_0_OR_NEWER
         if (_rb.linearVelocity.magnitude > maxSpeed)
-        {
             _rb.linearVelocity = _rb.linearVelocity.normalized * maxSpeed;
-        }
 #else
         if (_rb.velocity.magnitude > maxSpeed)
-        {
             _rb.velocity = _rb.velocity.normalized * maxSpeed;
-        }
 #endif
 
         ApplyBoundaryLimit();
@@ -237,15 +216,13 @@ public class PlayerMover : MonoBehaviour
     }
     #endregion
 
-    #region Input & Force Feedback Methods
+    #region Input Methods
     private void UpdateLogitechState()
     {
         if (!useLogitechWheel || !_isWheelInitialized) return;
 
-        // SDK 업데이트 실행
         bool updated = LogitechGSDK.LogiUpdate();
 
-        // 연결 여부 재확인 (갑자기 USB 뽑혔을 때 대비)
         if (updated && LogitechGSDK.LogiIsConnected(0))
         {
             _isWheelConnected = true;
@@ -253,13 +230,12 @@ public class PlayerMover : MonoBehaviour
         }
         else
         {
-            // 연결이 끊겼다면 다시 재연결 시도 로직 트리거
-            if (_isWheelConnected) // 연결되어 있다가 끊긴 순간
+            if (_isWheelConnected)
             {
                 Debug.LogError("[PlayerMover] 로지텍 휠 연결 끊김!");
                 _isWheelConnected = false;
                 _isWheelInitialized = false;
-                StartConnectionSequence(); // 재연결 시도 시작
+                StartConnectionSequence();
             }
         }
     }
@@ -295,7 +271,7 @@ public class PlayerMover : MonoBehaviour
 
         if (_isWheelConnected)
         {
-            wheel = _currentState.lX / 32768f;
+            wheel = ((_currentState.lX / 65535f) * 2f) - 1f;
             if (Mathf.Abs(wheel) < wheelDeadzone) wheel = 0f;
         }
         return Mathf.Clamp(keyboard + wheel, -1f, 1f);
@@ -323,72 +299,122 @@ public class PlayerMover : MonoBehaviour
     }
     #endregion
 
-    #region Game Logic & UI
-    private void HandleDirectionUI_PositionBased()
+    #region UI Logic (Strict Mode)
+
+    // IngameUIManager 인덱스 매칭: 1(앞), 2(왼), 3(오)
+    private const int ID_NONE = -1;
+    private const int ID_FORWARD = 1;
+    private const int ID_LEFT = 2;
+    private const int ID_RIGHT = 3;
+
+    /// <summary>
+    /// 키보드 입력 UI 처리 (양자택일 적용)
+    /// </summary>
+    private void HandleDirectionUI_Keyboard()
     {
         if (IngameUIManager.Instance == null) return;
 
-#if UNITY_6000_0_OR_NEWER
-        Vector3 velocity = _rb.linearVelocity;
-#else
-        Vector3 velocity = _rb.velocity;
-#endif
-        Vector3 localVel = transform.InverseTransformDirection(velocity);
+        // [핵심] 일단 꺼짐(NONE)으로 초기화
+        int targetState = ID_NONE;
 
-        float sideThreshold = 2.0f;
-        float forwardThreshold = 5.0f;
+        bool isLeft = Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A);
+        bool isRight = Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D);
+        bool isUp = Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W);
 
-        int detectedState = -1;
-
-        if (localVel.x < -sideThreshold) detectedState = 1;
-        else if (localVel.x > sideThreshold) detectedState = 2;
-        else if (localVel.z > forwardThreshold) detectedState = 0;
-
-        if (detectedState != -1)
+        // 1. 좌우 체크
+        if (isLeft && !isRight)
         {
-            if (_currentUiState != detectedState)
-            {
-                _currentUiState = detectedState;
-                IngameUIManager.Instance.OpenArrowPanel(_currentUiState);
-            }
-            _uiTimer = uiKeepTime;
+            targetState = ID_LEFT;
         }
-        else
+        else if (isRight && !isLeft)
         {
-            if (_uiTimer > 0)
+            targetState = ID_RIGHT;
+        }
+        // 2. 좌우가 아닐 때만 전진 체크
+        else if (isUp)
+        {
+            targetState = ID_FORWARD;
+        }
+
+        // 아무 키도 안 누르면 초기값인 ID_NONE이 유지됨 -> 화살표 꺼짐
+
+        UpdateArrowPanelState(targetState);
+    }
+
+    /// <summary>
+    /// 휠/페달 입력 UI 처리 (임계값 미만 시 즉시 소멸)
+    /// </summary>
+    private void HandleDirectionUI_Wheel()
+    {
+        if (IngameUIManager.Instance == null) return;
+
+        // [핵심] 일단 꺼짐(NONE)으로 초기화
+        int targetState = ID_NONE;
+
+        // 1. 핸들 (좌우) 우선 체크
+        if (_input.x < -wheelSteerThreshold)
+        {
+            targetState = ID_LEFT;
+        }
+        else if (_input.x > wheelSteerThreshold)
+        {
+            targetState = ID_RIGHT;
+        }
+        // 2. 핸들이 중립(임계값 이내)이면 엑셀 체크
+        // _input.y 값이 pedalAccelThreshold보다 커야만 ID_FORWARD가 됨.
+        // 작거나 같으면 조건문에 걸리지 않아 초기값인 ID_NONE이 유지됨.
+        else if (_input.y > pedalAccelThreshold)
+        {
+            targetState = ID_FORWARD;
+        }
+
+        UpdateArrowPanelState(targetState);
+    }
+
+    private void UpdateArrowPanelState(int newState)
+    {
+        // 상태 변경 시에만 UI 매니저 호출
+        if (_currentUiState != newState)
+        {
+            _currentUiState = newState;
+
+            if (_currentUiState != ID_NONE)
             {
-                _uiTimer -= Time.deltaTime;
+                IngameUIManager.Instance.OpenArrowPanel(_currentUiState);
             }
             else
             {
-                if (_currentUiState != -1)
-                {
-                    _currentUiState = -1;
-                    IngameUIManager.Instance.CloseArrowPanel();
-                }
+                // ID_NONE일 경우 무조건 닫기
+                IngameUIManager.Instance.CloseArrowPanel();
             }
         }
     }
 
+    private void ResetMovementAndUI()
+    {
+        _input = Vector2.zero;
+        if (IngameUIManager.Instance != null) IngameUIManager.Instance.CloseArrowPanel();
+        _currentUiState = ID_NONE;
+
+        if (_rb != null)
+        {
+#if UNITY_6000_0_OR_NEWER
+            _rb.linearVelocity = Vector3.zero;
+#else
+            _rb.velocity = Vector3.zero;
+#endif
+            _rb.angularVelocity = Vector3.zero;
+        }
+    }
+    #endregion
+
+    #region Game Logic & Skill
     public void SetMoveAction(bool value)
     {
         canMove = value;
         if (!value)
         {
-            _input = Vector2.zero;
-            if (IngameUIManager.Instance != null) IngameUIManager.Instance.CloseArrowPanel();
-            _currentUiState = -1;
-            _uiTimer = 0f;
-
-            if (_rb != null)
-            {
-#if UNITY_6000_0_OR_NEWER
-                _rb.linearVelocity = Vector3.zero;
-#else
-                _rb.velocity = Vector3.zero;
-#endif
-                _rb.angularVelocity = Vector3.zero;
-            }
+            ResetMovementAndUI();
         }
     }
 
@@ -459,7 +485,11 @@ public class PlayerMover : MonoBehaviour
         {
             int cost = DataManager.Instance.bufferUse;
             DataManager.Instance.SetBuffer(Mathf.Max(0, DataManager.Instance.GetBuffer() - cost));
-            if (IngameUIManager.Instance != null) IngameUIManager.Instance.Log("Buff Activated");
+            if (IngameUIManager.Instance != null)
+            {
+                IngameUIManager.Instance.Log("Buff Activated");
+                DataManager.Instance.SetShipShield(DataManager.Instance.maxShipShield);
+            }
         }
     }
 
@@ -506,104 +536,6 @@ public class PlayerMover : MonoBehaviour
             if (DataManager.Instance != null) DataManager.Instance.TakeDamage(20);
             if (AudioManager.Instance != null) AudioManager.Instance.PlaySFX("ShieldHit");
             Destroy(other.gameObject);
-        }
-    }
-    #endregion
-
-    #region Debug & Gizmos (Requested Features)
-    private void OnDrawGizmos()
-    {
-        // 1. 좌우 이동 제한 표시 (항상 표시됨)
-        DrawMovementLimits();
-
-        // 2. 도달 가능 반경 표시 (선택되지 않아도 표시하고 싶다면 여기 주석 해제)
-        // DrawReachRadius(); 
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        // 도달 가능 반경은 오브젝트가 선택되었을 때만 표시 (화면 복잡도 감소)
-        DrawReachRadius();
-    }
-
-    /// <summary>
-    /// 좌우로 움직일 수 있는 범위를 녹색 라인으로 표시합니다.
-    /// </summary>
-    private void DrawMovementLimits()
-    {
-        Gizmos.color = Color.green;
-
-        // 월드 좌표 기준 X축 제한선 계산
-        // 차는 Z축으로 전진한다고 가정하고 길게 그려줍니다.
-        float lineLength = 100f; // 앞뒤로 표시할 길이
-        Vector3 center = transform.position;
-
-        Vector3 leftLimitStart = new Vector3(-xLimit, center.y, center.z - lineLength / 2);
-        Vector3 leftLimitEnd = new Vector3(-xLimit, center.y, center.z + lineLength);
-
-        Vector3 rightLimitStart = new Vector3(xLimit, center.y, center.z - lineLength / 2);
-        Vector3 rightLimitEnd = new Vector3(xLimit, center.y, center.z + lineLength);
-
-        Gizmos.DrawLine(leftLimitStart, leftLimitEnd);
-        Gizmos.DrawLine(rightLimitStart, rightLimitEnd);
-    }
-
-    /// <summary>
-    /// 1초(Red) ~ 3초(Blue) 도달 예상 반경을 그라데이션 원으로 표시합니다.
-    /// 
-    /// </summary>
-    private void DrawReachRadius()
-    {
-        if (!Application.isPlaying && maxSpeed <= 0) return; // 에디터 모드에서 maxSpeed가 0이면 그리지 않음
-
-        Vector3 center = transform.position;
-        float speed = maxSpeed;
-
-        // 런타임이면 실제 현재 속도를 반영할 수도 있지만, 
-        // "갈 수 있는 반경"을 묻는 것이므로 MaxSpeed 기준이 적합합니다.
-
-        int steps = 20; // 그라데이션 부드러움 정도
-        float minTime = 1.0f; // 빨간색 시작 시간 (1초)
-        float maxTime = 3.0f; // 파란색 끝 시간 (3초)
-
-        for (int i = 0; i <= steps; i++)
-        {
-            // 0 ~ 1 사이 진행률
-            float t = (float)i / steps;
-
-            // 시간 계산 (1초 ~ 3초)
-            float currentTime = Mathf.Lerp(minTime, maxTime, t);
-
-            // 색상 계산 (Red -> Blue)
-            Color currentColor = Color.Lerp(Color.red, Color.blue, t);
-
-            // 반경 계산 (거리 = 속도 * 시간)
-            float currentRadius = speed * currentTime;
-
-            Gizmos.color = currentColor;
-            DrawGizmoCircle(center, currentRadius);
-        }
-    }
-
-    /// <summary>
-    /// XZ 평면에 원을 그리는 헬퍼 함수
-    /// </summary>
-    private void DrawGizmoCircle(Vector3 center, float radius)
-    {
-        int segments = 36;
-        float angleStep = 360f / segments;
-
-        Vector3 prevPoint = center + new Vector3(radius, 0, 0);
-
-        for (int i = 1; i <= segments; i++)
-        {
-            float angle = i * angleStep * Mathf.Deg2Rad;
-            float x = Mathf.Cos(angle) * radius;
-            float z = Mathf.Sin(angle) * radius;
-
-            Vector3 nextPoint = center + new Vector3(x, 0, z);
-            Gizmos.DrawLine(prevPoint, nextPoint);
-            prevPoint = nextPoint;
         }
     }
     #endregion

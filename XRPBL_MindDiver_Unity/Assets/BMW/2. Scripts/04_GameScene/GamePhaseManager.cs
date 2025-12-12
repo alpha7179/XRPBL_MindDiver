@@ -5,11 +5,12 @@ using static GamePhaseManager;
 
 /// <summary>
 /// 게임의 진행 단계(페이즈)와 각 단계별 목표 및 시간 제한을 관리하는 클래스
+/// 수정사항: 목표 도달(Trigger) 시 강제로 진행도 100% 동기화 기능 추가
 /// </summary>
 public class GamePhaseManager : MonoBehaviour
 {
     #region Enums
-    public enum Phase { PrePhase,Phase1, Phase2, Phase3, Complete, Null }
+    public enum Phase { PrePhase, Phase1, Phase2, Phase3, Complete, Null }
     #endregion
 
     #region Inspector Fields
@@ -48,8 +49,9 @@ public class GamePhaseManager : MonoBehaviour
     private bool isZoneReached = false;
 
     // 거리 계산용 변수
-    private Vector3 _startPosition; // 페이즈 1 시작 위치
-    private float _totalDistance;   // 시작점 ~ 목표점 총 거리
+    private Vector3 _startPosition;
+    private float _initialCenterDistance;
+    private float _actualTravelDistance;
 
     // 매 프레임 UI를 호출하지 않기 위해 상태가 변할 때만 호출하도록 함
     private bool isHappyState = false;
@@ -98,6 +100,7 @@ public class GamePhaseManager : MonoBehaviour
 
         yield return StartCoroutine(WaitForConditionOrTime(() => isZoneReached, phase1Duration));
 
+        // 종료 후 처리
         if (phase1TargetZone != null) phase1TargetZone.SetActive(false);
 
         /*
@@ -144,10 +147,28 @@ public class GamePhaseManager : MonoBehaviour
     #endregion
 
     #region Public Methods
+
+    // [핵심 수정] 외부에서 도달했다고 신호를 주면, 즉시 100%로 강제 설정
     public void SetZoneReached(bool reached)
     {
         isZoneReached = reached;
         Log($"[GamePhaseManager] Zone Reached: {reached}");
+
+        if (reached && currentPhase == Phase.Phase1)
+        {
+            // 거리 계산상 99%라도 물리적으로 도달했으면 100%로 고정
+            if (DataManager.Instance != null)
+            {
+                DataManager.Instance.SetProgress(100);
+            }
+
+            // UI도 즉시 행복한 상태(성공)로 전환
+            if (IngameUIManager.Instance != null)
+            {
+                IngameUIManager.Instance.SetCharacterState(3); // 3: Success
+                isHappyState = true;
+            }
+        }
     }
 
     public void StartPhase(Phase phase)
@@ -198,17 +219,22 @@ public class GamePhaseManager : MonoBehaviour
     }
     #endregion
 
-    #region Private Helper Methods (New)
+    #region Private Helper Methods
 
-    // 페이즈 1 거리 데이터 초기화
     private void InitializePhase1Distance()
     {
         if (playerTransform != null && phase1TargetZone != null)
         {
             _startPosition = playerTransform.position;
-            _totalDistance = Vector3.Distance(_startPosition, phase1TargetZone.transform.position) - playerTransform.localScale.z / 2;
+            _initialCenterDistance = Vector3.Distance(_startPosition, phase1TargetZone.transform.position);
 
-            Log($"[Distance Init] Start: {_startPosition}, Target Dist: {_totalDistance}");
+            float playerRadius = GetObjectRadiusZ(playerTransform);
+            float targetRadius = GetObjectRadiusZ(phase1TargetZone.transform);
+
+            _actualTravelDistance = _initialCenterDistance - playerRadius - targetRadius;
+            if (_actualTravelDistance <= 0.1f) _actualTravelDistance = 0.1f;
+
+            Log($"[Distance Init] CenterDist: {_initialCenterDistance}, ActualTravel: {_actualTravelDistance}");
         }
         else
         {
@@ -216,50 +242,52 @@ public class GamePhaseManager : MonoBehaviour
         }
     }
 
+    private float GetObjectRadiusZ(Transform tr)
+    {
+        Collider col = tr.GetComponent<Collider>();
+        if (col != null) return col.bounds.extents.z;
+        else return tr.localScale.z * 0.5f;
+    }
+
     private void UpdatePhase1Progress()
     {
-        // 타겟존이나 플레이어가 없으면 리턴
-        if (playerTransform == null || phase1TargetZone == null || _totalDistance <= 0.001f) return;
+        // [핵심 수정] 이미 도달했다면 거리 계산을 중단하고 100% 상태 유지
+        if (isZoneReached)
+        {
+            if (DataManager.Instance != null && DataManager.Instance.GetProgress() < 100)
+            {
+                DataManager.Instance.SetProgress(100);
+            }
+            return;
+        }
 
-        // 1. 현재 위치에서 목표 지점까지의 남은 거리 계산
-        float currentDistToTarget = Vector3.Distance(playerTransform.position, phase1TargetZone.transform.position);
+        if (playerTransform == null || phase1TargetZone == null || _actualTravelDistance <= 0.001f) return;
 
-        // 2. (총 거리 - 남은 거리) = 목표를 향해 실제로 이동한 거리
-        float traveledTowardsTarget = _totalDistance - currentDistToTarget + 10;
+        float currentCenterDist = Vector3.Distance(playerTransform.position, phase1TargetZone.transform.position);
+        float traveledCenterDist = _initialCenterDistance - currentCenterDist;
+        float progressPercentage = (traveledCenterDist / _actualTravelDistance) * 100f;
 
-        // 3. 진행률 계산
-        float progressPercentage = (traveledTowardsTarget / _totalDistance) * 100f;
+        // 약간의 오차를 허용하여 99.x%에서 멈추는 것 방지 (가중치 1.02배)
+        progressPercentage *= 1.02f;
 
-        // 4. 0 ~ 100 사이로 안전하게 자르기
         int progressInt = Mathf.RoundToInt(Mathf.Clamp(progressPercentage, 0f, 100f));
 
-        // DataManager에 값 반영
         if (DataManager.Instance != null) DataManager.Instance.SetProgress(progressInt);
 
-        // 진행도가 95% 이상일 때 행복한 표정(3)으로 변경
+        // UI 상태 업데이트
         if (progressInt >= 95)
         {
-            // 행복 상태가 아닐 때만 실행 (중복 실행 방지)
             if (!isHappyState)
             {
-                if (IngameUIManager.Instance != null)
-                {
-                    // [수정됨] 이미지/영상 통합 함수 호출 (3번: Success/Happy)
-                    IngameUIManager.Instance.SetCharacterState(3);
-                }
+                if (IngameUIManager.Instance != null) IngameUIManager.Instance.SetCharacterState(3);
                 isHappyState = true;
             }
         }
         else
         {
-            // 95% 미만이고, 이전에 행복 상태였다면 다시 기본(0)으로 복구
             if (isHappyState)
             {
-                if (IngameUIManager.Instance != null)
-                {
-                    // [수정됨] 이미지/영상 통합 함수 호출 (0번: Default)
-                    IngameUIManager.Instance.SetCharacterState(0);
-                }
+                if (IngameUIManager.Instance != null) IngameUIManager.Instance.SetCharacterState(0);
                 isHappyState = false;
             }
         }
