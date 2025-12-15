@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 2817489214371333102}
   m_Layer: 0
   m_Name: Enemy1
-  m_TagString: enemy
+  m_TagString: Enemy1
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -84,6 +84,7 @@ MonoBehaviour:
   isTracking: 0
   enemydamage: 5
   printDebug: 0
+  isDebuffed: 0
   primaryCamera: {fileID: 0}
 --- !u!114 &553724197462155839
 MonoBehaviour:
