@@ -13,7 +13,7 @@ public class EnemyHealth : MonoBehaviour
     public float damagePerClick = 5f; // 클릭당 입는 데미지
 
     [Header("무적 시간 설정")]
-    public float invulnerabilityDuration = 0.5f; // 무적 시간 (초 단위)
+    public float invulnerabilityDuration = 1f; // 무적 시간 (초 단위)
     private float nextDamageTime; // 다음 피해를 입을 수 있는 시간
 
     [Header("피격 후 이동 지연")]
