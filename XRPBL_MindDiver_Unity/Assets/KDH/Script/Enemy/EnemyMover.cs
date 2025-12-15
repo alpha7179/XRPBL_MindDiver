@@ -156,8 +156,8 @@ namespace Mover
             }
 
             //// 디버프 구현------------------------
-            //commonMS = movementSpeed;
-            //commonTCI = targetChangeInterval;
+            commonMS = movementSpeed;
+            commonTCI = targetChangeInterval;
             //if (DataManger.Instance.GetDebuffState())
             //{
             //    movementSpeed /= 2;
@@ -173,7 +173,7 @@ namespace Mover
             timer -= Time.deltaTime;
             if (timer <= 0f)
             {
-                // 로컬 목표 위치 갱신 (플레이어 데미지 여기에)
+                // 로컬 목표 위치 갱신 (플레이어 데미지 여기에)-----------
                 currentLocalTargetPosition = GetNewLocalTargetPosition(ScreenRight);
                 timer = targetChangeInterval;
                 DataManager.Instance.TakeDamage(enemydamage);
@@ -332,12 +332,16 @@ namespace Mover
             Debug.Log("- ScreenRight : " + ScreenRight);
         }
 
-        // 디버프 발동 시 호출 (사용X)
-        //public void Debuffed()
-        //{
-        //    movementSpeed /= 2;
-        //    targetChangeInterval *= 2;
-        //    EnemyHealth.currentHealth
-        //}
+        //디버프 발동 시 호출
+        public void DebuffStart()
+        {
+            movementSpeed /= 2;
+            targetChangeInterval *= 2;
+        }
+        public void DebuffEnd()
+        {
+            movementSpeed = commonMS;
+            targetChangeInterval = commonTCI;
+        }
     }
 }
