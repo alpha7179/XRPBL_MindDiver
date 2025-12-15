@@ -255,7 +255,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   coredamage: 10
-  Prefab: {fileID: 8429028321767397812, guid: f127cbe46853e2549b63c55a96c21f95, type: 3}
+  Prefab: {fileID: 0}
   spawnNum: 4
   minDistance: 50
   maxDistance: 60
