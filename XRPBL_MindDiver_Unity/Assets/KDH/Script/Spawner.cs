@@ -7,6 +7,7 @@ public class ObjectSpawner : MonoBehaviour
     public GameObject enemyPrefab; // 스폰할 오브젝트 프리팹 (필수)
     public int maxEnemies = 5; // 씬에 유지할 최대 오브젝트 개수
     public float spawnInterval = 10f; // 몇 초마다 개수를 체크하고 스폰할지
+    public int spawnNum = 2;
 
     [Header("스폰 위치 설정")]
     public float spawnDistance = 80f; // 플레이어/카메라로부터 스폰될 거리
@@ -56,13 +57,13 @@ public class ObjectSpawner : MonoBehaviour
 
         if (enemiesToSpawn > 0)
         {
-            //Debug.Log(enemiesToSpawn + "개의 오브젝트가 부족합니다. 스폰을 시작합니다.");
-            //for (int i = 0; i < enemiesToSpawn; i++)
-            //{
-            //    SpawnNewEnemy();
-            //}
+            Debug.Log(enemiesToSpawn + "개의 오브젝트가 부족합니다. 스폰을 시작합니다.");
+            for (int i = 0; i < spawnNum; i++)
+            {
+                SpawnNewEnemy(trackingCount, currentCount);
+            }
 
-            SpawnNewEnemy(trackingCount, currentCount);
+            //SpawnNewEnemy(trackingCount, currentCount);
         }
     }
 

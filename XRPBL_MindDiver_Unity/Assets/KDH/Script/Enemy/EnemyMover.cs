@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
+using static UnityEngine.GraphicsBuffer;
 
 public class EnemyMover : MonoBehaviour
 {
@@ -188,6 +189,9 @@ public class EnemyMover : MonoBehaviour
             worldTargetPosition,
             Time.deltaTime * movementSpeed
         );
+
+        // 오브젝트가 플레이어를 향하도록 회전시킵니다.
+        transform.LookAt(primaryCamera);
 
         // 회전 (카메라 기준으로 좌/우 시야각을 유지해야 하므로, 카메라는 바라보지 않습니다.)
         // 오브젝트의 회전은 로컬 움직임에 맞춰 자연스럽게 따라가게 둡니다.
