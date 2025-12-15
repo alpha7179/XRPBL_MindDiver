@@ -6,7 +6,7 @@ public class ObjectSpawner : MonoBehaviour
 {
     [Header("스폰 설정")]
     public GameObject enemyPrefab; // 스폰할 오브젝트 프리팹 (필수)
-    public int maxEnemies = 5; // 씬에 유지할 최대 오브젝트 개수
+    public int maxEnemies = 8; // 씬에 유지할 최대 오브젝트 개수
     public float spawnInterval = 4f; // 몇 초마다 개수를 체크하고 스폰할지
     public int spawnNum = 2;
 
