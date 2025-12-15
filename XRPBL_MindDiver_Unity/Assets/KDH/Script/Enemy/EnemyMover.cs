@@ -21,7 +21,7 @@ public class EnemyMover : MonoBehaviour
 
     [Header("감지 및 상태")]
     public float detectionRadius = 70f; // 추적을 시작할 최대 거리 (감지 범위)
-    private bool isTracking = false; // 현재 추적 중인지 상태
+    public bool isTracking = false; // 현재 추적 중인지 상태
 
     [Header("적 공격력")]
     public int enemydamage = 5;
@@ -72,11 +72,7 @@ public class EnemyMover : MonoBehaviour
                 return;
             }
         }
-
-        // 초기 목표 화면 및 위치 설정
-        if (Random.value < 0.5f)
-            ScreenRight = true;
-        currentLocalTargetPosition = GetNewLocalTargetPosition(ScreenRight);
+        //currentLocalTargetPosition = GetNewLocalTargetPosition(ScreenRight);
     }
 
     /*private void Update()
@@ -128,6 +124,7 @@ public class EnemyMover : MonoBehaviour
             {
                 isTracking = true;
                 // 추적 시작 시 초기 목표 위치 설정
+                ScreenSelection();
                 currentLocalTargetPosition = GetNewLocalTargetPosition(ScreenRight);
                 timer = targetChangeInterval;
                 Debug.Log("오브젝트가 플레이어 감지 범위에 진입했습니다. 추적 시작!");
@@ -274,5 +271,35 @@ public class EnemyMover : MonoBehaviour
         // 로컬 목표 위치를 즉시 새로운 랜덤 위치로 변경합니다.
         currentLocalTargetPosition = GetNewLocalTargetPosition(ScreenRight);
         timer = targetChangeInterval;
+    }
+
+    // 초기 목표 화면 및 위치 설정 (좌/우 숫자 적은 쪽으로 배정, 같을 시 랜덤)
+    public void ScreenSelection()
+    {
+        GameObject[] existingEnemies = GameObject.FindGameObjectsWithTag("Enemy");
+        int currentCount = existingEnemies.Length;
+        int screenCount = 0;
+        foreach (GameObject enemy in existingEnemies)
+        {
+            EnemyMover follower = enemy.GetComponent<EnemyMover>();
+            if (follower != null && follower.ScreenRight)
+            {
+                screenCount++;
+            }
+        }
+        if (currentCount == 0 || screenCount == currentCount / 2)
+        {
+            if (Random.value < 0.5f)
+                ScreenRight = true;
+        }
+        else if (screenCount > currentCount / 2)
+        {
+            ScreenRight = false;
+        }
+        else
+        {
+            ScreenRight = true;
+        }
+        Debug.Log("- ScreenRight : " + ScreenRight);
     }
 }
