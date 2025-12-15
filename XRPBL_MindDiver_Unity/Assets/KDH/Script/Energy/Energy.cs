@@ -8,7 +8,7 @@ namespace Energy
         // 추적 기준이 되는 카메라 
         public Transform primaryCamera;
         // 이 변수에 저장되는 위치는 카메라의 로컬 공간에서의 목표 위치
-        private Vector3 currentLocalTargetPosition;
+        public Vector3 currentLocalTargetPosition;
 
         [Header("위치 설정")]
         public Transform target; // 플레이어 Transform
@@ -17,7 +17,7 @@ namespace Energy
         public float minFlightHeight = -200f; // 카메라를 기준으로 최소 높이
         public float maxFlightHeight = 180f; // 카메라를 기준으로 최대 높이
         public float sectorAngleRange = 40f;
-        private bool ScreenRight; //화면 좌우
+        public bool ScreenRight; //화면 좌우
 
         [Header("감지 및 상태")]
         public float detectionRadius = 70f; // 추적을 시작할 최대 거리 (감지 범위)
@@ -43,7 +43,7 @@ namespace Energy
         // 플레이어의 점수를 업데이트할 정적(static) 변수 (간단한 예시)
         public static int playerEnergy = 0;
 
-        private void Start()
+        public virtual void Start()
         {
             // Target 대신 PrimaryCamera 할당 로직을 확인합니다.
             if (primaryCamera == null)
@@ -119,7 +119,7 @@ namespace Energy
                 Time.deltaTime * movementSpeed
             );
         }
-        private Vector3 GetNewLocalTargetPosition(bool ScreenDirection)
+        public Vector3 GetNewLocalTargetPosition(bool ScreenDirection)
         {
             // 1. 랜덤 각도 및 거리 생성
             float angle;
