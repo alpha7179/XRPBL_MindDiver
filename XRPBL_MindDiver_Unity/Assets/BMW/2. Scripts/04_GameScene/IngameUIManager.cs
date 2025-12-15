@@ -15,6 +15,9 @@ public class IngameUIManager : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+
+        RadiusProp = Shader.PropertyToID("_Radius");
+        ColorProp = Shader.PropertyToID("_VignetteColor");
     }
 
     #region Inspector Fields - HUD & Panels
@@ -87,8 +90,8 @@ public class IngameUIManager : MonoBehaviour
     [SerializeField] private List<Image> vignetteImages;
     private List<Material> vignetteMats = new List<Material>();
 
-    private readonly int RadiusProp = Shader.PropertyToID("_Radius");
-    private readonly int ColorProp = Shader.PropertyToID("_VignetteColor");
+    private int RadiusProp;
+    private int ColorProp;
 
     [Header("Vignette Colors")]
     [SerializeField] private Color damageColor = Color.red;

@@ -5,182 +5,237 @@ using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// 캐릭터 선택 화면 매니저 (수정됨: 토글 방식 + 3초 대기 + 연속 클릭 방지)
+/// 캐릭터 선택 화면 매니저 (최종_Ver_FadeIn)
+/// - 기능: 토글 입력, 3초 대기, 연속 클릭 방지, 클립 개수 자동 인식
+/// - 추가: 영상 시작 시 부드러운 페이드인 효과 적용
 /// </summary>
-public class CharaterSelectManager : MonoBehaviour
+public class CharacterSelectManager : MonoBehaviour
 {
     #region Inspector Fields
-    [Header("Video Players Settings (Order: 0=Front, 1=Left, 2=Right)")]
-    // 3면 비디오 플레이어 배열
+
+    [Header("Video Players Settings")]
     public VideoPlayer[] videoPlayers;
 
-    [Header("Video Clips Settings (Order: 0=Front, 1=Left, 2=Right)")]
-    public List<GameObject> VideoPanels;
-    // 재생할 아웃트로 비디오 클립 배열
+    [Header("Video Panels Settings")]
+    public GameObject[] videoPanels;
+
+    [Header("Video Clips Settings")]
     public VideoClip[] outroClips;
 
-    [Header("Settings")]
+    [Header("Timing Settings")]
     [Tooltip("모두 활성화 된 후 대기해야 하는 시간 (초)")]
     [SerializeField] private float requiredHoldTime = 3.0f;
-
-    [Header("Input Settings (New)")]
     [Tooltip("버튼 연속 클릭 방지를 위한 쿨타임 (초)")]
     [SerializeField] private float clickCooldown = 1.0f;
 
-    [Header("Text 구성요소")]
-    // 정면 버튼 텍스트 오브젝트
-    [SerializeField] private GameObject FrontButtonText;
-    // 좌측 버튼 텍스트 오브젝트
-    [SerializeField] private GameObject LeftButtonText;
-    // 우측 버튼 텍스트 오브젝트
-    [SerializeField] private GameObject RightButtonText;
+    [Header("UI Components")]
+    [SerializeField] private GameObject frontButtonText;
+    [SerializeField] private GameObject leftButtonText;
+    [SerializeField] private GameObject rightButtonText;
 
-    [Header("UI Fade Settings")]
-    // 패널 페이드 효과 지속 시간
-    [SerializeField] private float panelFadeDuration = 0.2f;
+    [Header("Fade Effect Settings")]
+    [Tooltip("버튼 텍스트가 사라질 때 걸리는 시간")]
+    [SerializeField] private float textFadeDuration = 0.2f;
+
+    [Tooltip("영상이 나타날 때(페이드인) 걸리는 시간")]
+    [SerializeField] private float videoFadeDuration = 1.5f; // 영상은 좀 더 천천히 뜨도록 설정
 
     [Header("Audio Settings")]
-    [Range(0f, 1f)] public float masterVolume;
+    [Range(0f, 1f)] public float masterVolume = 1.0f;
     [SerializeField] private bool isSideDisplaySoundMute = true;
 
     [Header("Debug Settings")]
-    // 디버그 로그 출력 여부
     [SerializeField] private bool isDebugMode = true;
-
-    [Header("디버그 옵션 (테스트용)")]
-    [Tooltip("체크 시 정면 버튼만 활성화되어도 타이머가 작동합니다.")]
-    // 단일 버튼 디버그 모드 활성화 여부
     [SerializeField] private bool enableSingleButtonDebug = false;
+
     #endregion
 
     #region Private Fields
-    // 패널별 실행 중인 코루틴 관리 딕셔너리
-    private Dictionary<GameObject, Coroutine> panelCoroutines = new Dictionary<GameObject, Coroutine>();
-
-    // 버튼 활성화 상태 관리 배열 (0: Front, 1: Left, 2: Right)
-    // true = 선택됨(활성화), false = 선택안됨(비활성화)
+    private Dictionary<GameObject, Coroutine> uiFadeCoroutines = new Dictionary<GameObject, Coroutine>();
     private bool[] isButtonActive = new bool[3];
-
-    // 현재 타이머 누적 시간
-    private float currentHoldTimer = 0f;
-    // 비디오 재생 시작 여부 확인
     private bool isVideoPlayed = false;
-
-    // [추가됨] 마지막으로 클릭 입력이 들어온 시간
     private float lastClickTime = -99f;
+    private Coroutine sequenceTimerCoroutine;
     #endregion
 
     #region Unity Lifecycle
+
     private void Start()
     {
-        foreach (var video in VideoPanels) if (video) video.SetActive(false);
+        // 1. 비디오 패널 초기화 (중요: Alpha를 0으로 맞춰놔야 페이드인이 먹힘)
+        if (videoPanels != null)
+        {
+            foreach (var panel in videoPanels)
+            {
+                if (panel)
+                {
+                    // CanvasGroup이 없으면 추가하고, Alpha를 0으로 강제 설정
+                    CanvasGroup cg = panel.GetComponent<CanvasGroup>();
+                    if (cg == null) cg = panel.AddComponent<CanvasGroup>();
+                    cg.alpha = 0f;
 
-        // 데이터 매니저 연동
+                    panel.SetActive(false);
+                }
+            }
+        }
+
+        // 2. 볼륨 데이터 연동
         if (DataManager.Instance != null)
-            masterVolume = ((float)DataManager.Instance.GetVideoVolume()) / 100;
+        {
+            masterVolume = ((float)DataManager.Instance.GetVideoVolume()) / 100f;
+        }
 
-        if (!CheckArrayValid(videoPlayers, "Video Players")) return;
+        // 3. 하드웨어 체크
+        if (!CheckHardwareArrayValid(videoPlayers, "Video Players")) return;
+        if (!CheckHardwareArrayValid(videoPanels, "Video Panels")) return;
 
-        // 메인 비디오 플레이어에 종료 이벤트 연결
+        // 4. 이벤트 연결
         if (videoPlayers[0] != null)
         {
             videoPlayers[0].loopPointReached += OnVideoFinished;
         }
 
-        // 디버그 모드 경고
         if (enableSingleButtonDebug)
-        {
-            Debug.LogWarning("!!! [Test Mode] 정면 버튼만 눌러도 진행되는 모드가 켜져있습니다 !!!");
-        }
+            LogWarning("!!! [Test Mode] 정면 버튼만 눌러도 진행되는 모드가 켜져있습니다 !!!");
     }
 
-    private void Update()
+    #endregion
+
+    #region Input Event Handlers
+
+    public void OnPointerDownFront() { ProcessInput(0, frontButtonText); }
+    public void OnPointerDownLeft() { ProcessInput(1, leftButtonText); }
+    public void OnPointerDownRight() { ProcessInput(2, rightButtonText); }
+
+    private void ProcessInput(int index, GameObject textObj)
     {
         if (isVideoPlayed) return;
 
-        // 조건 충족(모두 활성화 or 디버그 모드 충족) 확인
-        if (IsReadyToCharge())
+        if (Time.time - lastClickTime < clickCooldown)
         {
-            currentHoldTimer += Time.deltaTime;
+            Log($"[Input Ignored] Clicked too fast. (Cooldown: {clickCooldown}s)");
+            return;
+        }
 
-            // 1초 단위 로그 출력
-            if (currentHoldTimer % 1.0f < Time.deltaTime)
-                Log($"Ready... Wait for start: {currentHoldTimer:F1} / {requiredHoldTime}");
+        lastClickTime = Time.time;
+        isButtonActive[index] = !isButtonActive[index];
+        bool isActive = isButtonActive[index];
 
-            // 대기 시간 도달 시 비디오 시퀀스 시작
-            if (currentHoldTimer >= requiredHoldTime)
-            {
-                currentHoldTimer = 0f;
-                isVideoPlayed = true;
+        Log($"Display {index} Toggled : {(isActive ? "ACTIVE" : "INACTIVE")}");
 
-                // 텍스트 완전 숨김 확인 및 비디오 패널 활성화
-                FadePanel(FrontButtonText, false);
-                FadePanel(RightButtonText, false);
-                FadePanel(LeftButtonText, false);
-                foreach (var video in VideoPanels) if (video) FadePanel(video, true);
+        // 버튼 텍스트는 짧은 시간(textFadeDuration) 동안 페이드
+        FadePanel(textObj, !isActive, textFadeDuration);
 
-                if (AudioManager.Instance != null) AudioManager.Instance.StopBGM();
+        CheckSequenceCondition();
+    }
 
-                StartVideoSequence();
-            }
+    #endregion
+
+    #region Sequence Logic
+
+    private void CheckSequenceCondition()
+    {
+        bool isReady;
+        if (enableSingleButtonDebug) isReady = isButtonActive[0];
+        else isReady = isButtonActive.All(x => x);
+
+        if (isReady)
+        {
+            if (sequenceTimerCoroutine == null)
+                sequenceTimerCoroutine = StartCoroutine(CountdownRoutine());
         }
         else
         {
-            // 조건 불충족 시 타이머 초기화
-            if (currentHoldTimer > 0)
+            if (sequenceTimerCoroutine != null)
             {
-                currentHoldTimer = 0f;
+                StopCoroutine(sequenceTimerCoroutine);
+                sequenceTimerCoroutine = null;
                 Log("Condition broken. Timer reset.");
             }
         }
     }
-    #endregion
 
-    #region Input Logic
-    /*
-     * 현재 상태가 타이머를 돌릴 준비가 되었는지 확인
-     */
-    private bool IsReadyToCharge()
+    private IEnumerator CountdownRoutine()
     {
-        // 디버그 모드: 정면(0번)만 활성화되어 있어도 OK
-        if (enableSingleButtonDebug)
+        float timer = 0f;
+        while (timer < requiredHoldTime)
         {
-            return isButtonActive[0];
+            timer += Time.deltaTime;
+            if (timer % 1.0f < Time.deltaTime)
+                Log($"Ready... Wait for start: {timer:F1} / {requiredHoldTime}");
+            yield return null;
         }
 
-        // 일반 모드: 모든 버튼이 활성화(true)되어야 OK
-        return isButtonActive.All(x => x);
+        sequenceTimerCoroutine = null;
+        isVideoPlayed = true;
+
+        PrepareAndStartVideo();
     }
+
+    private void PrepareAndStartVideo()
+    {
+        // 텍스트 버튼 숨김 (즉시 혹은 짧게)
+        FadePanel(frontButtonText, false, textFadeDuration);
+        FadePanel(leftButtonText, false, textFadeDuration);
+        FadePanel(rightButtonText, false, textFadeDuration);
+
+        if (AudioManager.Instance != null) AudioManager.Instance.StopBGM();
+
+        StartSmartVideoSequence();
+    }
+
     #endregion
 
-    #region Video Logic
-    private void StartVideoSequence()
-    {
-        Log($"[VideoManager] {requiredHoldTime}s Ready! Playing Outro Video...");
+    #region Smart Video Logic
 
-        if (CheckArrayValid(outroClips, "Outro Clips"))
+    private void StartSmartVideoSequence()
+    {
+        Log($"[VideoManager] Ready! Clip Count: {(outroClips != null ? outroClips.Length : 0)}");
+
+        if (outroClips == null || outroClips.Length == 0)
         {
-            PlayPanoramicVideo(outroClips);
+            LogError("Outro Clips missing!");
+            OnVideoFinished(null);
+            return;
         }
-    }
 
-    private void PlayPanoramicVideo(VideoClip[] clips)
-    {
-        for (int i = 0; i < 3; i++)
+        bool isPanoramaMode = (outroClips.Length >= 3);
+        int targetLoopCount = isPanoramaMode ? 3 : 1;
+
+        if (outroClips.Length == 2)
+            LogWarning("Clip count is 2. Playing Front only.");
+
+        // 1. 패널 활성화 (Video Fade Duration 사용)
+        if (videoPanels != null)
         {
-            // 배열 범위 안전 체크
-            if (i >= videoPlayers.Length || i >= clips.Length) break;
-
-            if (videoPlayers[i] != null && clips[i] != null)
+            for (int i = 0; i < videoPanels.Length; i++)
             {
-                videoPlayers[i].clip = clips[i];
+                if (i < targetLoopCount)
+                {
+                    // ★ 여기서 비디오 전용 시간(videoFadeDuration)을 사용하여 부드럽게 켭니다.
+                    FadePanel(videoPanels[i], true, videoFadeDuration);
+                }
+                else
+                {
+                    videoPanels[i].SetActive(false);
+                }
+            }
+        }
+
+        // 2. 비디오 재생
+        for (int i = 0; i < targetLoopCount; i++)
+        {
+            if (i >= videoPlayers.Length) break;
+
+            if (videoPlayers[i] != null && outroClips[i] != null)
+            {
+                videoPlayers[i].clip = outroClips[i];
                 ApplyVolume(videoPlayers[i], i);
                 videoPlayers[i].Play();
             }
         }
 
-        // 비디오 플레이어 0번 문제 시 즉시 종료 처리
-        if (videoPlayers[0] == null || clips[0] == null)
+        if (videoPlayers[0] == null || videoPlayers[0].clip == null)
         {
             OnVideoFinished(null);
         }
@@ -188,144 +243,86 @@ public class CharaterSelectManager : MonoBehaviour
 
     private void ApplyVolume(VideoPlayer vp, int screenIndex)
     {
+        float finalVolume = (isSideDisplaySoundMute && screenIndex > 0) ? 0f : masterVolume;
         if (vp.audioOutputMode == VideoAudioOutputMode.Direct)
-        {
-            float finalVolume = (isSideDisplaySoundMute && screenIndex > 0) ? 0f : masterVolume;
             vp.SetDirectAudioVolume(0, finalVolume);
-        }
         else if (vp.audioOutputMode == VideoAudioOutputMode.AudioSource)
         {
             AudioSource source = vp.GetTargetAudioSource(0);
-            if (source != null)
-            {
-                float finalVolume = (isSideDisplaySoundMute && screenIndex > 0) ? 0f : masterVolume;
-                source.volume = finalVolume;
-            }
+            if (source != null) source.volume = finalVolume;
         }
     }
 
     private void OnVideoFinished(VideoPlayer vp)
     {
-        Log("[VideoManager] Video Finished.");
+        Log("[VideoManager] Finished.");
         if (videoPlayers != null && videoPlayers.Length > 0 && videoPlayers[0] != null)
-        {
             videoPlayers[0].loopPointReached -= OnVideoFinished;
-        }
 
-        if (DataManager.Instance != null && GameManager.Instance != null)
-        {
+        if (GameManager.Instance != null)
             GameManager.Instance.ChangeState(GameManager.GameState.GameStage);
-        }
-    }
-    #endregion
-
-    #region UI Event Handlers
-
-    // EventTrigger의 Pointer Down에 연결하세요.
-    public void OnPointerDownFront() { ToggleButtonState(0, FrontButtonText); }
-    public void OnPointerDownLeft() { ToggleButtonState(1, LeftButtonText); }
-    public void OnPointerDownRight() { ToggleButtonState(2, RightButtonText); }
-
-    public void OnPointerUpFront() { /* Do Nothing */ }
-    public void OnPointerUpLeft() { /* Do Nothing */ }
-    public void OnPointerUpRight() { /* Do Nothing */ }
-
-
-    /*
-     * 버튼 상태 토글 (ON <-> OFF) 처리 및 UI 갱신
-     */
-    private void ToggleButtonState(int index, GameObject textObj)
-    {
-        // 1. 이미 비디오가 시작되었으면 입력 무시
-        if (isVideoPlayed) return;
-
-        // 2. 쿨타임 체크 (연속 클릭 방지)
-        // 현재 시간 - 마지막 클릭 시간이 쿨타임보다 작으면 함수 종료
-        if (Time.time - lastClickTime < clickCooldown)
-        {
-            Log($"[Input Ignored] Clicked too fast. (Cooldown: {clickCooldown}s)");
-            return;
-        }
-
-        // 3. 유효한 입력이므로 마지막 클릭 시간 갱신
-        lastClickTime = Time.time;
-
-        // 4. 상태 반전 (True -> False, False -> True)
-        isButtonActive[index] = !isButtonActive[index];
-        bool isActive = isButtonActive[index];
-
-        // 로그 출력
-        Log($"Display {index} Toggled : {(isActive ? "ACTIVE" : "INACTIVE")}");
-
-        // 활성화 되면 -> 텍스트 숨김 (Fade Out)
-        // 비활성화 되면 -> 텍스트 보임 (Fade In)
-        FadePanel(textObj, !isActive);
     }
 
     #endregion
 
-    #region Helper Methods
-    private bool CheckArrayValid(System.Array array, string arrayName)
-    {
-        if (array == null || array.Length < 3)
-        {
-            Log($"[VideoManager] Error: {arrayName} array must have at least 3 elements.");
-            if (videoPlayers != null && videoPlayers.Length > 0 && videoPlayers[0] != null)
-            {
-                OnVideoFinished(videoPlayers[0]);
-            }
-            return false;
-        }
-        return true;
-    }
+    #region Helper Methods (Fade & Validations)
 
-    private void FadePanel(GameObject panel, bool show)
+    /// <summary>
+    /// 페이드 효과 적용 (duration 매개변수 추가됨)
+    /// </summary>
+    private void FadePanel(GameObject panel, bool show, float duration)
     {
         if (panel == null) return;
 
         CanvasGroup cg = panel.GetComponent<CanvasGroup>();
         if (cg == null) cg = panel.AddComponent<CanvasGroup>();
 
-        if (panelCoroutines.ContainsKey(panel) && panelCoroutines[panel] != null)
+        if (uiFadeCoroutines.ContainsKey(panel) && uiFadeCoroutines[panel] != null)
         {
-            StopCoroutine(panelCoroutines[panel]);
+            StopCoroutine(uiFadeCoroutines[panel]);
         }
 
-        panelCoroutines[panel] = StartCoroutine(FadePanelRoutine(panel, cg, show));
+        uiFadeCoroutines[panel] = StartCoroutine(FadePanelRoutine(panel, cg, show, duration));
     }
 
-    private IEnumerator FadePanelRoutine(GameObject panel, CanvasGroup cg, bool show)
+    private IEnumerator FadePanelRoutine(GameObject panel, CanvasGroup cg, bool show, float duration)
     {
         float targetAlpha = show ? 1.0f : 0.0f;
         float startAlpha = cg.alpha;
         float elapsed = 0f;
 
-        if (show)
-        {
-            panel.SetActive(true);
-            // 이미 알파가 목표치와 비슷하면 깜빡임 방지를 위해 0으로 초기화하지 않음
-            if (startAlpha == 1.0f && show) { /* 이미 보여짐 */ }
-            else if (startAlpha == 0.0f && !show) { /* 이미 숨겨짐 */ }
-        }
+        if (show) panel.SetActive(true);
 
-        while (elapsed < panelFadeDuration)
+        while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            cg.alpha = Mathf.Lerp(startAlpha, targetAlpha, elapsed / panelFadeDuration);
+            // 부드러운 전환을 위해 Lerp 사용
+            cg.alpha = Mathf.Lerp(startAlpha, targetAlpha, elapsed / duration);
             yield return null;
         }
 
         cg.alpha = targetAlpha;
 
-        if (!show)
-        {
-            panel.SetActive(false);
-        }
+        if (!show) panel.SetActive(false);
+
+        if (uiFadeCoroutines.ContainsKey(panel)) uiFadeCoroutines.Remove(panel);
     }
 
-    public void Log(string message)
+    private bool CheckHardwareArrayValid(System.Array array, string arrayName)
     {
-        if (isDebugMode) Debug.Log(message);
+        if (array == null || array.Length < 3)
+        {
+            LogError($"[System Error] {arrayName} needs 3 elements.");
+            if (videoPlayers != null && videoPlayers.Length > 0 && videoPlayers[0] != null)
+                OnVideoFinished(videoPlayers[0]);
+            return false;
+        }
+        return true;
     }
+
+    private void Log(string message) { if (isDebugMode) Debug.Log($"[CharacterSelect] {message}"); }
+    private void LogWarning(string message) { if (isDebugMode) Debug.LogWarning($"[CharacterSelect] {message}"); }
+    private void LogError(string message) { Debug.LogError($"[CharacterSelect] {message}"); }
+
     #endregion
 }

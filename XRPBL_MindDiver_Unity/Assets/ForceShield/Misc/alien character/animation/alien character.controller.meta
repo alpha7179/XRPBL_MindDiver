@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 016e205a34300fb4b89029b56c37edac
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 141118
+  packageName: Responsive Energy Shield
+  packageVersion: 1.0
+  assetPath: Assets/ForceShield/Misc/alien character/animation/alien character.controller
+  uploadId: 300772
