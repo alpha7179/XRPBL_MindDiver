@@ -114,7 +114,6 @@ namespace Mover
             transform.LookAt(target);
         }*/
 
-        // LateUpdate에서 처리하여 카메라 움직임 후 위치를 상쇄시킵니다.
         void LateUpdate()
         {
             if (primaryCamera == null) return;

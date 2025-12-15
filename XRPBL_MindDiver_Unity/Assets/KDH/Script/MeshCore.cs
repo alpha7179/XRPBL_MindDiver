@@ -5,14 +5,13 @@ using static UnityEngine.GraphicsBuffer;
 public class MeshCore : MonoBehaviour
 {
     [Header("스폰 설정")]
-    [SerializeField] private int coredamage = 10;
-    [SerializeField] private GameObject Prefab;// 생성할 오브젝트 프리팹
-    [SerializeField] private int spawnNum = 4; // 생성할 개수
-    [SerializeField] private float spawnRadius = 5f; // 폭파 후 적들이 흩어질 반경
-    [SerializeField] private float minDistance = 50f;
-    [SerializeField] private float maxDistance = 60f;
+    public int coredamage = 10;
+    public GameObject Prefab;// 생성할 오브젝트 프리팹
+    public int spawnNum = 4; // 생성할 개수
+    public float minDistance = 50f;
+    public float maxDistance = 60f;
     public Transform primaryCamera;
-
+    public float detectionRadius = 25f;
 
     private void Start()
     {
@@ -28,22 +27,47 @@ public class MeshCore : MonoBehaviour
         }
     }
 
-    // 이 함수는 이 오브젝트가 다른 Collider를 가진 오브젝트와 실제로 충돌했을 때 호출됩니다.
-    private void OnCollisionEnter(Collision collision)
+    void LateUpdate()
     {
-        // 1. 충돌한 오브젝트가 플레이어인지 확인
-        // 플레이어 오브젝트에 "Player" 태그가 지정되어 있어야 합니다.
-        if (collision.gameObject.CompareTag("Player"))
+        if (primaryCamera == null) return;
+
+        // 감지 범위 확인
+        // 카메라 (또는 플레이어)와 오브젝트 사이의 월드 거리를 계산합니다.
+        float distanceToTarget = Vector3.Distance(transform.position, primaryCamera.position);
+
+        // 거리 확인용
+        //Debug.Log("플레이어와 적 거리: " + distanceToTarget);
+        //Debug.Log("감지 거리: " + detectionRadius);
+
+        if (distanceToTarget <= detectionRadius)
         {
-            // 2. 적 처치 함수 호출
+            //Debug.Log("---INRANGE---");
             Die();
-
-            Debug.Log("플레이어와 충돌! 적 오브젝트가 파괴됩니다.");
-
-            // Note: 플레이어에게 데미지를 주는 로직이 있다면 이 위치에 추가합니다.
             DataManager.Instance.TakeDamage(coredamage);
         }
+        else
+        {
+            // 범위 밖에 있다면 아무것도 하지 않습니다.
+            return;
+        }
     }
+
+    //// 이 함수는 이 오브젝트가 다른 Collider를 가진 오브젝트와 실제로 충돌했을 때 호출됩니다.
+    //private void OnCollisionEnter(Collision collision)
+    //{
+    //    // 1. 충돌한 오브젝트가 플레이어인지 확인
+    //    // 플레이어 오브젝트에 "Player" 태그가 지정되어 있어야 합니다.
+    //    if (collision.gameObject.CompareTag("Player"))
+    //    {
+    //        // 2. 적 처치 함수 호출
+    //        Die();
+
+    //        Debug.Log("플레이어와 충돌! 적 오브젝트가 파괴됩니다.");
+
+    //        // Note: 플레이어에게 데미지를 주는 로직이 있다면 이 위치에 추가합니다.
+    //        DataManager.Instance.TakeDamage(coredamage);
+    //    }
+    //}
 
     // 오브젝트 처치 시 로직
     private void Die()
@@ -73,7 +97,7 @@ public class MeshCore : MonoBehaviour
         Vector3 horizontalPosition = primaryCamera.position + direction * distance;
 
         // 수직 오프셋을 더해 최종 목표 위치를 반환합니다.
-        Vector3 spawnPosition = horizontalPosition + Vector3.up * Random.Range(-200, 200);
+        Vector3 spawnPosition = horizontalPosition + Vector3.up * Random.Range(-20, 20);
 
         // 오브젝트 생성
         GameObject newEnemy = Instantiate(Prefab, spawnPosition, Quaternion.identity);
