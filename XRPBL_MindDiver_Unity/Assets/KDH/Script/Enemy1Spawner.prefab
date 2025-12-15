@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 1065639348953880663}
   - component: {fileID: 6763791326616331870}
   m_Layer: 0
-  m_Name: Spawner
+  m_Name: Enemy1Spawner
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -46,7 +46,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyPrefab: {fileID: 4328753124211211831, guid: 05dc3d2bbe0499641a1b955f542ccd4e,
     type: 3}
-  maxEnemies: 5
-  spawnInterval: 1
+  maxEnemies: 8
+  spawnInterval: 4
+  spawnNum: 2
   spawnDistance: 80
   spawnHeightRange: 50

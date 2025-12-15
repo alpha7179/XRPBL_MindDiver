@@ -5,9 +5,11 @@ TagManager:
   serializedVersion: 3
   tags:
   - Obstacle
-  - enemy
   - Buff
   - Debuff
+  - Enemy1
+  - Enemy2
+  - Enemy
   layers:
   - Default
   - TransparentFX

@@ -1,12 +1,14 @@
 using UnityEngine;
 using System.Linq; // 배열에서 Linq 기능을 사용하기 위해 추가
+using Mover;
 
 public class ObjectSpawner : MonoBehaviour
 {
     [Header("스폰 설정")]
     public GameObject enemyPrefab; // 스폰할 오브젝트 프리팹 (필수)
     public int maxEnemies = 5; // 씬에 유지할 최대 오브젝트 개수
-    public float spawnInterval = 10f; // 몇 초마다 개수를 체크하고 스폰할지
+    public float spawnInterval = 4f; // 몇 초마다 개수를 체크하고 스폰할지
+    public int spawnNum = 2;
 
     [Header("스폰 위치 설정")]
     public float spawnDistance = 80f; // 플레이어/카메라로부터 스폰될 거리
@@ -36,8 +38,8 @@ public class ObjectSpawner : MonoBehaviour
 
     void CheckAndSpawn()
     {
-        // 1. 현재 씬에 있는 "Enemy" 태그를 가진 오브젝트의 개수를 셉니다.
-        GameObject[] existingEnemies = GameObject.FindGameObjectsWithTag("Enemy");
+        // 1. 현재 씬에 있는 "Enemy1" 태그를 가진 오브젝트의 개수를 셉니다.
+        GameObject[] existingEnemies = GameObject.FindGameObjectsWithTag("Enemy1");
         int currentCount = existingEnemies.Length;
 
         int trackingCount = 0;
@@ -56,13 +58,13 @@ public class ObjectSpawner : MonoBehaviour
 
         if (enemiesToSpawn > 0)
         {
-            //Debug.Log(enemiesToSpawn + "개의 오브젝트가 부족합니다. 스폰을 시작합니다.");
-            //for (int i = 0; i < enemiesToSpawn; i++)
-            //{
-            //    SpawnNewEnemy();
-            //}
+            Debug.Log(enemiesToSpawn + "개의 오브젝트가 부족합니다. 스폰을 시작합니다.");
+            for (int i = 0; i < spawnNum; i++)
+            {
+                SpawnNewEnemy(trackingCount, currentCount);
+            }
 
-            SpawnNewEnemy(trackingCount, currentCount);
+            //SpawnNewEnemy(trackingCount, currentCount);
         }
     }
 
