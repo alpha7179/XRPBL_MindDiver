@@ -1,15 +1,8 @@
 fileFormatVersion: 2
-guid: 8fce5540653d6d8439e52364661e10c9
+guid: bf7d77b2a520e5942996c194d08959d5
 NativeFormatImporter:
   externalObjects: {}
-  mainObjectFileID: 2100000
+  mainObjectFileID: 0
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 247933
-  packageName: Magic Effects FREE
-  packageVersion: 1.6
-  assetPath: Assets/Hovl Studio/Magic effects pack/Materials/Circle2.mat
-  uploadId: 762116

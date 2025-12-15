@@ -1,15 +1,8 @@
 fileFormatVersion: 2
-guid: 818e127314f46c844a3b31d893dcfe6a
+guid: dd84781b6c93b3e42b64b14a2586e521
 NativeFormatImporter:
   externalObjects: {}
-  mainObjectFileID: 2100000
+  mainObjectFileID: 0
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 247933
-  packageName: Magic Effects FREE
-  packageVersion: 1.6
-  assetPath: Assets/Hovl Studio/Magic effects pack/Materials/Flare.mat
-  uploadId: 762116

@@ -390,7 +390,9 @@ MonoBehaviour:
   isTracking: 0
   enemydamage: 5
   printDebug: 0
+  isDebuffed: 0
   primaryCamera: {fileID: 0}
+  ScreenRight: 0
 --- !u!114 &325154353
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -568,17 +570,17 @@ PrefabInstance:
     - target: {fileID: 7516666102840308618, guid: 423f189d47bf95b4482ccb7f8de1c564,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 100
+      value: 250
       objectReference: {fileID: 0}
     - target: {fileID: 7516666102840308618, guid: 423f189d47bf95b4482ccb7f8de1c564,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 100
+      value: 250
       objectReference: {fileID: 0}
     - target: {fileID: 7516666102840308618, guid: 423f189d47bf95b4482ccb7f8de1c564,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 1500
+      value: 2000
       objectReference: {fileID: 0}
     - target: {fileID: 7516666102840308618, guid: 423f189d47bf95b4482ccb7f8de1c564,
         type: 3}
@@ -593,7 +595,7 @@ PrefabInstance:
     - target: {fileID: 7516666102840308618, guid: 423f189d47bf95b4482ccb7f8de1c564,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1126
+      value: 1780
       objectReference: {fileID: 0}
     - target: {fileID: 7516666102840308618, guid: 423f189d47bf95b4482ccb7f8de1c564,
         type: 3}
@@ -821,7 +823,9 @@ MonoBehaviour:
   isTracking: 0
   enemydamage: 1
   printDebug: 0
+  isDebuffed: 0
   primaryCamera: {fileID: 0}
+  ScreenRight: 0
 --- !u!1 &686549963
 GameObject:
   m_ObjectHideFlags: 0
@@ -867,7 +871,9 @@ MonoBehaviour:
   isTracking: 0
   enemydamage: 5
   printDebug: 0
+  isDebuffed: 0
   primaryCamera: {fileID: 0}
+  ScreenRight: 0
 --- !u!114 &686549965
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1034,7 +1040,9 @@ MonoBehaviour:
   isTracking: 0
   enemydamage: 5
   printDebug: 0
+  isDebuffed: 0
   primaryCamera: {fileID: 0}
+  ScreenRight: 0
 --- !u!114 &730213882
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1201,7 +1209,9 @@ MonoBehaviour:
   isTracking: 0
   enemydamage: 5
   printDebug: 0
+  isDebuffed: 0
   primaryCamera: {fileID: 0}
+  ScreenRight: 0
 --- !u!114 &770517849
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1489,7 +1499,9 @@ MonoBehaviour:
   isTracking: 0
   enemydamage: 1
   printDebug: 0
+  isDebuffed: 0
   primaryCamera: {fileID: 0}
+  ScreenRight: 0
 --- !u!1 &959927336
 GameObject:
   m_ObjectHideFlags: 0
@@ -1668,8 +1680,10 @@ MonoBehaviour:
   forwardForce: 12000
   reverseForce: 2000
   strafeForce: 12000
+  liftForce: 2000
   maxSpeed: 40
-  xLimit: 80
+  xLimit: 175
+  yLimit: 175
   coastingDrag: 1
   brakingDrag: 3
   wheelDeadzone: 0.05
@@ -1888,7 +1902,9 @@ MonoBehaviour:
   isTracking: 0
   enemydamage: 5
   printDebug: 0
+  isDebuffed: 0
   primaryCamera: {fileID: 0}
+  ScreenRight: 0
 --- !u!1 &1106018230
 GameObject:
   m_ObjectHideFlags: 0
@@ -2007,9 +2023,9 @@ Transform:
   m_GameObject: {fileID: 1106018230}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 500}
-  m_LocalScale: {x: 1000, y: 1000, z: 5}
-  m_ConstrainProportionsScale: 0
+  m_LocalPosition: {x: 0, y: 0, z: 1800}
+  m_LocalScale: {x: 10000, y: 10000, z: 50}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2247,7 +2263,9 @@ MonoBehaviour:
   isTracking: 0
   enemydamage: 5
   printDebug: 0
+  isDebuffed: 0
   primaryCamera: {fileID: 0}
+  ScreenRight: 0
 --- !u!114 &1309002543
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2414,7 +2432,9 @@ MonoBehaviour:
   isTracking: 0
   enemydamage: 5
   printDebug: 0
+  isDebuffed: 0
   primaryCamera: {fileID: 0}
+  ScreenRight: 0
 --- !u!114 &1417070008
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2587,7 +2607,9 @@ MonoBehaviour:
   isTracking: 0
   enemydamage: 5
   printDebug: 0
+  isDebuffed: 0
   primaryCamera: {fileID: 0}
+  ScreenRight: 0
 --- !u!114 &1479842476
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2795,7 +2817,9 @@ MonoBehaviour:
   isTracking: 0
   enemydamage: 5
   printDebug: 0
+  isDebuffed: 0
   primaryCamera: {fileID: 0}
+  ScreenRight: 0
 --- !u!114 &1669634985
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2962,7 +2986,9 @@ MonoBehaviour:
   isTracking: 0
   enemydamage: 5
   printDebug: 0
+  isDebuffed: 0
   primaryCamera: {fileID: 0}
+  ScreenRight: 0
 --- !u!114 &1688435909
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3135,7 +3161,9 @@ MonoBehaviour:
   isTracking: 0
   enemydamage: 5
   printDebug: 0
+  isDebuffed: 0
   primaryCamera: {fileID: 0}
+  ScreenRight: 0
 --- !u!114 &1813561998
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3397,6 +3425,47 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!21 &2008585257
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: UI/RoundedCorners/RoundedCorners
+  m_Shader: {fileID: 4800000, guid: 0bd2ec5d73751e34a814274a454bec41, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _ColorMask: 15
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    - _UseUIAlphaClip: 0
+    m_Colors:
+    - _OuterUV: {r: 0, g: 0, b: 1, a: 1}
+    - _WidthHeightRadius: {r: 356, g: 356, b: 42.2, a: 0}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
 --- !u!1 &2124475194
 GameObject:
   m_ObjectHideFlags: 0
@@ -3563,7 +3632,9 @@ MonoBehaviour:
   isTracking: 0
   enemydamage: 1
   printDebug: 0
+  isDebuffed: 0
   primaryCamera: {fileID: 0}
+  ScreenRight: 0
 --- !u!20 &2130118318 stripped
 Camera:
   m_CorrespondingSourceObject: {fileID: 1438894298562800503, guid: fd9843b425acd794fbf020953bca492a,

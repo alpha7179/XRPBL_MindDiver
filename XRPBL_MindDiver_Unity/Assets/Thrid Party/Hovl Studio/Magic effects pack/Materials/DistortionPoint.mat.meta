@@ -1,15 +1,8 @@
 fileFormatVersion: 2
-guid: fe8d615cbaec71545b42f9163243b02d
+guid: 542e484e955c41c4784627ebb2b98432
 NativeFormatImporter:
   externalObjects: {}
-  mainObjectFileID: 2100000
+  mainObjectFileID: 0
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 247933
-  packageName: Magic Effects FREE
-  packageVersion: 1.6
-  assetPath: Assets/Hovl Studio/Magic effects pack/Materials/DistortionPoint.mat
-  uploadId: 762116

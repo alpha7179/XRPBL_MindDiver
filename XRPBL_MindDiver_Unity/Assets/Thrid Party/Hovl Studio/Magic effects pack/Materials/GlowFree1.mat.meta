@@ -1,15 +1,8 @@
 fileFormatVersion: 2
-guid: 32cc483f9636edd4bbb82e26419fd290
+guid: 5cd0872a81a64c54dbf4096d059b040c
 NativeFormatImporter:
   externalObjects: {}
-  mainObjectFileID: 2100000
+  mainObjectFileID: 0
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 247933
-  packageName: Magic Effects FREE
-  packageVersion: 1.6
-  assetPath: Assets/Hovl Studio/Magic effects pack/Materials/GlowFree1.mat
-  uploadId: 762116

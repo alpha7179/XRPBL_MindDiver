@@ -1,15 +1,8 @@
 fileFormatVersion: 2
-guid: 00b2a55319476cf40b84578eb2f8c2df
+guid: bd42b54985fa3634fa207fcc2dbcf222
 NativeFormatImporter:
   externalObjects: {}
-  mainObjectFileID: 2100000
+  mainObjectFileID: 0
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 247933
-  packageName: Magic Effects FREE
-  packageVersion: 1.6
-  assetPath: Assets/Hovl Studio/Magic effects pack/Materials/Arrow1.mat
-  uploadId: 762116
