@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: ba8e2ab68bbc368409f4ce9567679df7
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 141118
+  packageName: Responsive Energy Shield
+  packageVersion: 1.0
+  assetPath: Assets/ForceShield/Shader/ForceShield.shader
+  uploadId: 300772

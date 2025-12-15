@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 4156d649945582445aa49d038f4872c3
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 141118
+  packageName: Responsive Energy Shield
+  packageVersion: 1.0
+  assetPath: Assets/ForceShield/Misc/hitParticle.prefab
+  uploadId: 300772

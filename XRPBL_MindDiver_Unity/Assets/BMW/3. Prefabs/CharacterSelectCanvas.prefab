@@ -17,7 +17,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &2745195044970102451
 RectTransform:
   m_ObjectHideFlags: 0
@@ -27,15 +27,15 @@ RectTransform:
   m_GameObject: {fileID: 127075729439020733}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 1.3, y: 1.3, z: 1.3}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 4958748590029121147}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 2050, y: 1130}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6662633909003532208
 CanvasRenderer:
@@ -643,22 +643,6 @@ MonoBehaviour:
         - m_Target: {fileID: 1819437393403048064}
           m_TargetAssemblyTypeName: CharaterSelectManager, Assembly-CSharp
           m_MethodName: OnPointerDownRight
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
-  - eventID: 3
-    callback:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 1819437393403048064}
-          m_TargetAssemblyTypeName: CharaterSelectManager, Assembly-CSharp
-          m_MethodName: OnPointerUpRight
           m_Mode: 1
           m_Arguments:
             m_ObjectArgument: {fileID: 0}
@@ -1386,22 +1370,6 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
-  - eventID: 3
-    callback:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 1819437393403048064}
-          m_TargetAssemblyTypeName: CharaterSelectManager, Assembly-CSharp
-          m_MethodName: OnPointerUpLeft
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
 --- !u!1 &7026963925865398789
 GameObject:
   m_ObjectHideFlags: 0
@@ -1871,22 +1839,6 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
-  - eventID: 3
-    callback:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 1819437393403048064}
-          m_TargetAssemblyTypeName: CharaterSelectManager, Assembly-CSharp
-          m_MethodName: OnPointerUpFront
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
 --- !u!1 &8457024609137141764
 GameObject:
   m_ObjectHideFlags: 0
@@ -1938,20 +1890,19 @@ MonoBehaviour:
   - {fileID: 3088793437894628565}
   - {fileID: 1060334938111105929}
   - {fileID: 186650850244804533}
-  VideoPanels:
+  videoPanels:
   - {fileID: 127075729439020733}
   - {fileID: 4157039504182495988}
   - {fileID: 6710225982660397637}
   outroClips:
-  - {fileID: 32900000, guid: dc3b1445c9bdf6a45a8eda1757f81ebf, type: 3}
-  - {fileID: 32900000, guid: dc3b1445c9bdf6a45a8eda1757f81ebf, type: 3}
-  - {fileID: 32900000, guid: dc3b1445c9bdf6a45a8eda1757f81ebf, type: 3}
+  - {fileID: 32900000, guid: aed0b769a8b22d7458471c6f2cef9c42, type: 3}
   requiredHoldTime: 3
   clickCooldown: 1
-  FrontButtonText: {fileID: 7624357000790489771}
-  LeftButtonText: {fileID: 3812749809935811722}
-  RightButtonText: {fileID: 5881443050111823164}
-  panelFadeDuration: 0.2
+  frontButtonText: {fileID: 7632815492901835514}
+  leftButtonText: {fileID: 6724254571315801740}
+  rightButtonText: {fileID: 3743543192602731624}
+  textFadeDuration: 0.2
+  videoFadeDuration: 1.5
   masterVolume: 0
   isSideDisplaySoundMute: 1
   isDebugMode: 1

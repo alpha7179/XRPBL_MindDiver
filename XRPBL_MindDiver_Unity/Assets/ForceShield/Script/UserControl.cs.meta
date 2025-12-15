@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: ee7f7baf9af517b47809f6ce69b93130
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 141118
+  packageName: Responsive Energy Shield
+  packageVersion: 1.0
+  assetPath: Assets/ForceShield/Script/UserControl.cs
+  uploadId: 300772

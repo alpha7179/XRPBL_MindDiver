@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 2684c594cb870fb4ba671b74b3b1163b
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 141118
+  packageName: Responsive Energy Shield
+  packageVersion: 1.0
+  assetPath: Assets/ForceShield/Materials/LaserMat.mat
+  uploadId: 300772

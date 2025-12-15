@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: feebb8aea8251a74fa384948726f23ac
+timeCreated: 1521282861
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 141118
+  packageName: Responsive Energy Shield
+  packageVersion: 1.0
+  assetPath: Assets/ForceShield/Misc/Sci-Fi Gun/Material/Shader/Baked_Pattern2.mat
+  uploadId: 300772
